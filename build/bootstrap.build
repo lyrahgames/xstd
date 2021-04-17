@@ -1,0 +1,7 @@
+project = lyrahgames-xstd
+
+using version
+using config
+using test
+using install
+using dist
