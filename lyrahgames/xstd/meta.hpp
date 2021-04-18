@@ -6,6 +6,11 @@ namespace lyrahgames::xstd {
 
 namespace generic {
 
+template <typename T, typename U>
+concept equal = std::same_as<T, U>;
+template <typename T>
+concept is_bool = equal<T, bool>;
+
 template <typename T>
 concept array =      //
     std::regular<T>  //

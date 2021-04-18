@@ -2,3 +2,4 @@ import libs = lyrahgames-xstd%lib{lyrahgames-xstd}
 
 ./: exe{main}: cxx{main} $libs
 ./: exe{chrono}: cxx{chrono} $libs
+./: exe{contracts}: cxx{contracts} $libs
