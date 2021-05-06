@@ -1,3 +1,8 @@
-# lyrahgames-xstd
+<h1 align="center">
+    Lyrahgames' Extended Standard
+</h1>
 
-Header-Only C++ Library to extend the functionality of the STL
+<p align="center">
+    Header-Only C++ Library to Extend the Functionality of the STL
+</p>
+

@@ -2,7 +2,9 @@
 !*/
 
 !*.hpp
+!*.ipp
 !*.cpp
+!*.in
 
 !root.build
 !bootstrap.build
@@ -13,4 +15,8 @@
 !COPYING
 !README.md
 
+!.clang-format
+
+!.gitmodules
+!.gitattributes
 !.gitignore

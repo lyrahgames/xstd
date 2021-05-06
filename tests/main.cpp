@@ -16,6 +16,5 @@ int main() {
        << string('a') << '\n'
        << string("Hello!") << '\n'
        << setprecision(16)  //
-       << float32(M_PI) << '\n'
-       << float64(M_PI) << '\n';
+       << float32(M_PI) << '\n';
 }

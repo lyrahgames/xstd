@@ -15,7 +15,7 @@ namespace lyrahgames::xstd {
 namespace generic {
 template <typename T>
 concept constraint =
-    generic::callable<T>&& generic::is_bool<meta::result<T> > &&
+    generic::callable<T>&& meta::equal<meta::result<T>, bool> &&
     (meta::argument_count<T> == 1) && std::default_initializable<T>;
 }
 
@@ -32,7 +32,7 @@ using contract = meta::argument<T, 0>;
 // and the underlying type.
 template <generic::constraint T>
 struct contract {
-  using type = meta::argument<T, 0>;
+  using type       = meta::argument<T, 0>;
   using constraint = T;
 
   void check() {
@@ -70,5 +70,27 @@ using non_negative = contract<decltype([](type v) { return v >= type(0); })>;
 
 template <std::totally_ordered type>
 using negative = contract<decltype([](type v) { return v < type(0); })>;
+
+template <std::totally_ordered type>
+using non_zero = contract<decltype([](type v) { return v != type(0); })>;
+
+// [0,1]
+template <std::totally_ordered type>
+using normalized =
+    contract<decltype([](type v) { return (type(0) <= v) && (v <= type(1)); })>;
+// (0,1)
+template <std::totally_ordered type>
+using open_normalized =
+    contract<decltype([](type v) { return (type(0) < v) && (v < type(1)); })>;
+// [0,1)
+template <std::totally_ordered type>
+using left_normalized =
+    contract<decltype([](type v) { return (type(0) <= v) && (v < type(1)); })>;
+// (0,1]
+template <std::totally_ordered type>
+using right_normalized =
+    contract<decltype([](type v) { return (type(0) < v) && (v <= type(1)); })>;
+
+// non-empty contract for containers and spans
 
 }  // namespace lyrahgames::xstd
