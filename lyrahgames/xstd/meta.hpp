@@ -93,7 +93,7 @@ using arguments = typename decltype(function{std::declval<T>()})::arguments;
 template <generic::callable T, size_t N = 0>
 requires(N < argument_count<T>)  //
     using qualified_argument = std::decay_t<typename decltype(function{
-        std::declval<T>()})::argument<N>>;
+        std::declval<T>()})::template argument<N>>;
 
 template <generic::callable T, size_t N = 0>
 requires(N < argument_count<T>)  //
