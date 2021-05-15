@@ -10,7 +10,7 @@
 !bootstrap.build
 !export.build
 !buildfile
-!manifest
+!*manifest
 
 !COPYING
 !README.md

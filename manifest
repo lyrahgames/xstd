@@ -12,4 +12,6 @@ email: lyrahgames@mailbox.org
 depends: * build2 >= 0.13.0
 depends: * bpkg >= 0.13.0
 
+depends: doctest ^ 2.4.0
+
 requires: c++20
