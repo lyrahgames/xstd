@@ -25,24 +25,6 @@ concept reducible = identical<std::decay_t<T>, U>;
 template <typename T>
 concept irreducible = reducible<T, T>;
 
-template <typename T, typename U>
-concept forward_constructible = requires(T&& v) {
-  { U(std::forward<T>(v)) }
-  ->identical<U>;
-};
-
-template <typename T, typename U>
-concept forward_assignable = requires(U& u, T&& t) {
-  { u = std::forward<T>(t) }
-  ->identical<U&>;
-};
-
-template <typename T, typename U>
-concept forwardable = forward_constructible<T, U>&& forward_assignable<T, U>;
-
-template <typename T, typename U>
-concept forward_reference = reducible<T, U>&& forwardable<T, U>;
-
 template <typename T>
 concept callable = requires(T v) {
   std::function{v};
