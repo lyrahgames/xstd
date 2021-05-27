@@ -9,6 +9,30 @@ namespace lyrahgames::xstd {
 namespace generic {
 
 template <typename T, typename U>
+concept copy_constructible = requires(const T& v) {
+  { U(v) }
+  ->identical<U>;
+};
+
+template <typename T, typename U>
+concept copy_assignable = requires(U& u, const T& v) {
+  { u = v }
+  ->identical<U&>;
+};
+
+template <typename T, typename U>
+concept move_constructible = requires(T& v) {
+  { U(std::move(v)) }
+  ->identical<U>;
+};
+
+template <typename T, typename U>
+concept move_assignable = requires(U& u, T& v) {
+  { u = std::move(v) }
+  ->identical<U&>;
+};
+
+template <typename T, typename U>
 concept forward_constructible = requires(T&& v) {
   { U(std::forward<T>(v)) }
   ->identical<U>;
