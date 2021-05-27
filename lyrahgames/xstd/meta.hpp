@@ -32,6 +32,23 @@ concept callable = requires(T v) {
 
 }  // namespace generic
 
+namespace generic {
+
+namespace detail {
+
+template <template <typename...> typename T, typename U>
+struct instantiated : std::false_type {};
+
+template <template <typename...> typename T, typename... U>
+struct instantiated<T, T<U...>> : std::true_type {};
+
+}  // namespace detail
+
+template <typename T, template <typename...> typename U>
+concept instantiation = detail::instantiated<U, std::decay_t<T>>::value;
+
+}  // namespace generic
+
 namespace meta {
 
 template <typename T, typename U>
