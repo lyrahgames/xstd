@@ -1,6 +1,6 @@
 : 1
 name: lyrahgames-xstd
-version: 0.1.2-a.0.z
+version: 0.1.2
 project: lyrahgames
 summary: Header-Only C++ Library to extend the functionality of the STL
 license: GPL-3.0-or-later
