@@ -7,7 +7,7 @@ namespace lyrahgames::xstd {
 // Function Overloads for Constructors
 template <typename... types>
 requires std::constructible_from<std::string, types...>  //
-    inline auto string(types&&... values) {
+inline auto string(types&&... values) {
   return std::string(std::forward<types>(values)...);
 }
 

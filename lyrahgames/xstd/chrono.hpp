@@ -11,7 +11,7 @@ namespace lyrahgames::xstd {
 // Measure the duration of a given function by using perfect forwarding.
 template <typename base = float64, typename functor, typename... arguments>
 requires std::invocable<functor, arguments...>  //
-    inline auto duration(functor&& f, arguments&&... args) {
+inline auto duration(functor&& f, arguments&&... args) {
   using namespace std;
   using clock = chrono::high_resolution_clock;
 

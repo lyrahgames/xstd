@@ -6,8 +6,12 @@
 using namespace std;
 using namespace lyrahgames::xstd;
 
-non_negative<float> f(non_negative<float> x) { return x; }
-positive<float> g(positive<double> x) { return -x; }
+non_negative<float> f(non_negative<float> x) {
+  return x;
+}
+positive<float> g(positive<double> x) {
+  return -x;
+}
 
 int main() {
   try {

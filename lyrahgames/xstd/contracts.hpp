@@ -14,10 +14,9 @@ namespace lyrahgames::xstd {
 
 namespace generic {
 template <typename T>
-concept constraint =
-    generic::callable<T>&& meta::equal<meta::result<T>, bool> &&
-    (meta::argument_count<T> == 1) && std::default_initializable<T>;
-}
+concept constraint = generic::callable<T> && meta::equal < meta::result<T>,
+bool > &&(meta::argument_count<T> == 1) && std::default_initializable<T>;
+}  // namespace generic
 
 struct contract_violation {};
 

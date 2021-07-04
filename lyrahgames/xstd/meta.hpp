@@ -83,8 +83,8 @@ template <generic::callable T>
 using result = std::decay_t<qualified_result<T>>;
 
 template <generic::callable T>
-constexpr auto argument_count =
-    decltype(function{std::declval<T>()})::argument_count;
+constexpr auto argument_count = decltype(function{
+    std::declval<T>()})::argument_count;
 
 template <generic::callable T>
 using arguments = typename decltype(function{std::declval<T>()})::arguments;

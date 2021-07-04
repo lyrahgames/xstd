@@ -40,7 +40,7 @@ struct tuple_element {
   /// Default Constructor
   constexpr tuple_element()                      //
       requires std::default_initializable<type>  //
-      = default;
+  = default;
 
   template <detail::tuple_element_instantiation V>
   constexpr explicit tuple_element(V&& t) : data(std::forward<V>(t).value()) {}
@@ -105,7 +105,7 @@ struct tuple_element {
 
 /// Specialization for types that can be used as a direct parent.
 template <size_t N, typename T>
-    requires std::is_class_v<T> && (!std::is_final_v<T>)  //
+requires std::is_class_v<T> &&(!std::is_final_v<T>)  //
     struct tuple_element<N, T> : T {
   using type = T;
   using base = T;
@@ -123,7 +123,7 @@ template <size_t N, typename T>
   /// Default Constructor
   constexpr tuple_element()                   //
       requires std::default_initializable<T>  //
-      = default;
+  = default;
 
   template <detail::tuple_element_instantiation V>
   constexpr explicit tuple_element(V&& t) : base(std::forward<V>(t).value()) {}
@@ -244,8 +244,8 @@ struct tuple<T, U...> : detail::tuple_element<sizeof...(U), T>, tuple<U...> {
   /// Default Constructor
   constexpr tuple()                              //
       requires std::default_initializable<head>  //
-          && std::default_initializable<next>    //
-      = default;
+      && std::default_initializable<next>        //
+  = default;
 
   /// Templatized Forward Constructor
   template <generic::forward_constructible<head> V, typename... W>
