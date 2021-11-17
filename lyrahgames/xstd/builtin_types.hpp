@@ -23,4 +23,7 @@ using ufloat64 = non_negative<float64>;
 using nfloat32 = normalized<float32>;
 using nfloat64 = normalized<float64>;
 
+using zstring = char*;
+using czstring = const char*;
+
 }  // namespace lyrahgames::xstd

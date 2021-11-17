@@ -1,6 +1,20 @@
 #pragma once
+#include <stdexcept>
+#include <string>
+//
+#ifdef __clang__
+#include <experimental/source_location>
+namespace lyrahgames::xstd {
+using source_location = std::experimental::source_location;
+}
+#else
+#include <source_location>
+namespace lyrahgames::xstd {
+using source_location = std::source_location;
+}
+#endif
+//
 #include <lyrahgames/xstd/meta.hpp>
-// #include <lyrahgames/xstd/string.hpp>
 
 namespace lyrahgames::xstd {
 
@@ -18,7 +32,14 @@ concept constraint = generic::callable<T> && meta::equal < meta::result<T>,
 bool > &&(meta::argument_count<T> == 1) && std::default_initializable<T>;
 }  // namespace generic
 
-struct contract_violation {};
+struct contract_violation : std::runtime_error {
+  using base = std::runtime_error;
+  contract_violation(source_location l)
+      : base(std::string(l.file_name()) + ':' + std::to_string(l.line()) + ':' +
+             std::to_string(l.column()) + ": " + l.function_name()),
+        location(l) {}
+  source_location location{};
+};
 
 #ifdef NDEBUG
 
@@ -31,21 +52,25 @@ using contract = meta::argument<T, 0>;
 // and the underlying type.
 template <generic::constraint T>
 struct contract {
-  using type       = meta::argument<T, 0>;
+  using type = meta::argument<T, 0>;
   using constraint = T;
 
-  void check() {
-    if (!constraint{}(value)) throw contract_violation{};
+  void check(source_location location) {
+    if (!constraint{}(value)) throw contract_violation{location};
   }
 
   // Implicit Constructor
-  contract(type v) : value(v) { check(); }
+  contract(type v, source_location location = source_location::current())
+      : value(v) {
+    check(location);
+  }
 
   // Construction from contracts with a convertible base type
   template <generic::constraint U>
   requires std::constructible_from<type, typename contract<U>::type>  //
-  contract(contract<U> c) : value(c.value) {
-    check();
+  contract(contract<U> c, source_location location = source_location::current())
+      : value(c.value) {
+    check(location);
   }
 
   // Implicit conversion to base type.
