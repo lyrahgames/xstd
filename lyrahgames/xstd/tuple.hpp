@@ -342,7 +342,7 @@ namespace meta {
 
 /// Meta function for accessing the element type of a tuple.
 template <typename tuple, size_t index>
-using element = detail::element<tuple, index>::type;
+using element = typename detail::element<tuple, index>::type;
 
 }  // namespace meta
 
@@ -366,7 +366,7 @@ struct tuple_size<lyrahgames::xstd::tuple<T...>> {
 template <size_t N, typename... T>  //
 requires(N < sizeof...(T))          //
     struct tuple_element<N, lyrahgames::xstd::tuple<T...>> {
-  using type = typename lyrahgames::xstd::tuple<T...>::type<N>;
+  using type = typename lyrahgames::xstd::tuple<T...>::template type<N>;
 };
 
 }  // namespace std

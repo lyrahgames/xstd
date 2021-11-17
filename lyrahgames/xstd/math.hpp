@@ -36,4 +36,19 @@ inline uint64_t ceil_pow2(uint64_t x) {
   return uint64_t{1} << (log2(x - 1) + 1);
 }
 
+template <size_t N>
+constexpr auto pow(auto x) noexcept {
+  if constexpr (N == 0)
+    return 1;
+  else if constexpr (N == 1)
+    return x;
+  else if constexpr (N % 2) {
+    const auto t = pow<(N - 1) / 2>(x);
+    return t * t * x;
+  } else {
+    const auto t = pow<N / 2>(x);
+    return t * t;
+  }
+}
+
 }  // namespace lyrahgames::xstd
