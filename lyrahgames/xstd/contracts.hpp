@@ -14,6 +14,7 @@ using source_location = std::source_location;
 }
 #endif
 //
+#include <lyrahgames/xstd/builtin_types.hpp>
 #include <lyrahgames/xstd/meta.hpp>
 
 namespace lyrahgames::xstd {
@@ -116,5 +117,10 @@ using right_normalized =
     contract<decltype([](type v) { return (type(0) < v) && (v <= type(1)); })>;
 
 // non-empty contract for containers and spans
+
+using ufloat32 = non_negative<float32>;
+using ufloat64 = non_negative<float64>;
+using nfloat32 = normalized<float32>;
+using nfloat64 = normalized<float64>;
 
 }  // namespace lyrahgames::xstd
