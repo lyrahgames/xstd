@@ -30,10 +30,10 @@ struct static_zstring {
   constexpr operator zstring() noexcept { return data_; }
   constexpr operator czstring() const noexcept { return data_; }
 
+  /// Get index-based access to the characters.
   constexpr auto operator[](size_t index) noexcept -> char& {
     return data_[index];
   }
-
   constexpr auto operator[](size_t index) const noexcept -> char {
     return data_[index];
   }
@@ -42,12 +42,17 @@ struct static_zstring {
   friend constexpr auto operator<=>(const static_zstring&,
                                     const static_zstring&) noexcept = default;
 
+  /// Returns the size of the string without the terminating null character.
   static constexpr auto size() noexcept { return N - 1; }
+
+  /// Checks whether the string is empty.
   static constexpr bool empty() noexcept { return size() == 0; }
 
+  /// Get access to the raw underlying data.
   constexpr auto data() noexcept -> zstring { return data_; }
   constexpr auto data() const noexcept -> czstring { return data_; }
 
+  /// Get acces to the underlying data by using iterators.
   constexpr auto begin() noexcept -> iterator { return &data_[0]; }
   constexpr auto begin() const noexcept -> const_iterator { return &data_[0]; }
   constexpr auto end() noexcept -> iterator { return &data_[N]; }
@@ -85,6 +90,8 @@ constexpr auto operator+(const static_zstring<N>& str1,
   return result;
 }
 
+/// Returns a static string containing the substring
+/// of the given string specified by offset and size.
 template <size_t offset, size_t size, size_t N>
 constexpr auto substring(static_zstring<N> str) noexcept  //
     requires(offset + size < N) {
@@ -94,18 +101,24 @@ constexpr auto substring(static_zstring<N> str) noexcept  //
   return result;
 }
 
+/// Returns a static string containing the prefix
+/// of the given string with given size.
 template <size_t size, size_t N>
 constexpr auto prefix(static_zstring<N> str) noexcept  //
     requires(size < N) {
   return substring<0, size>(str);
 }
 
+/// Returns a static string containing the suffix
+/// of the given string with given size.
 template <size_t size, size_t N>
 constexpr auto suffix(static_zstring<N> str) noexcept  //
     requires(size < N) {
   return substring<N - 1 - size, size>(str);
 }
 
+/// Returns the first index at which the characters
+/// of the two given strings are not equal.
 template <size_t N, size_t M>
 constexpr auto prefix_match_index(static_zstring<N> str1,
                                   static_zstring<M> str2) noexcept -> size_t {
