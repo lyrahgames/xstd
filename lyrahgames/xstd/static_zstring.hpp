@@ -122,8 +122,8 @@ constexpr auto suffix(static_zstring<N> str) noexcept  //
 template <size_t N, size_t M>
 constexpr auto prefix_match_index(static_zstring<N> str1,
                                   static_zstring<M> str2) noexcept -> size_t {
-  constexpr auto bound = (N < M) ? N : M;
-  for (size_t i = 0; i < bound - 1; ++i)
+  constexpr auto bound = ((N < M) ? N : M) - 1;
+  for (size_t i = 0; i < bound; ++i)
     if (str1[i] != str2[i]) return i;
   return bound;
 }

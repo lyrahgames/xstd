@@ -22,6 +22,8 @@ static_assert(substring<2, 4>("--help"_sz) == "help"_sz);
 static_assert(prefix<2>("--help"_sz) == "--"_sz);
 static_assert(suffix<3>("my_file.txt"_sz) == "txt"_sz);
 static_assert(prefix_match_index("version"_sz, "verbose"_sz) == 3);
+static_assert(prefix_match_index("version"_sz, ""_sz) == 0);
+static_assert(prefix_match_index("help"_sz, "help"_sz) == 4);
 
 SCENARIO("static_zstring") {
   run<"TEST">();
