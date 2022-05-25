@@ -128,4 +128,9 @@ constexpr auto prefix_match_index(static_zstring<N> str1,
   return bound;
 }
 
+template <size_t index, size_t N>
+constexpr auto tail(static_zstring<N> str) noexcept {
+  return suffix<str.size() - index>(str);
+}
+
 }  // namespace lyrahgames::xstd
