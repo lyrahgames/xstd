@@ -6,23 +6,23 @@
 
 namespace lyrahgames::xstd {
 
-namespace detail {
+// namespace detail {
 
-// Access to elements of pack extension by using indices.
-template <size_t index, typename... types>
-struct element;
-template <size_t index>
-struct element<index> {};
-template <typename t, typename... types>
-struct element<0, t, types...> {
-  using type = t;
-};
-template <size_t index, typename t, typename... types>
-struct element<index, t, types...> {
-  using type = typename element<index - 1, types...>::type;
-};
+// // Access to elements of pack extension by using indices.
+// template <size_t index, typename... types>
+// struct element;
+// template <size_t index>
+// struct element<index> {};
+// template <typename t, typename... types>
+// struct element<0, t, types...> {
+//   using type = t;
+// };
+// template <size_t index, typename t, typename... types>
+// struct element<index, t, types...> {
+//   using type = typename element<index - 1, types...>::type;
+// };
 
-}  // namespace detail
+// }  // namespace detail
 
 namespace detail {
 template <typename T, size_t count>
@@ -170,8 +170,9 @@ struct type_list<T, types...> {
                                    (meta::equal<U, types> || ...);
 
   template <size_t index>
-  // requires(index <= size - 1)  //
-  using element = typename detail::element<index, T, types...>::type;
+  // requires(index <= sizeof...(types))  //
+  using element =
+      typename meta::detail::variadic_projection<index, T, types...>::type;
 
   using front = element<0>;
   using back = element<size - 1>;
@@ -273,25 +274,37 @@ concept type_list = is_type_list<T>;
 namespace meta {
 
 template <instance::type_list list>
-constexpr size_t size = list::size;
+struct detail::size<list> {
+  static constexpr size_t value = list::size;
+};
 
 template <instance::type_list list>
-constexpr bool empty = list::empty;
+struct detail::empty<list> {
+  static constexpr bool value = list::empty;
+};
 
 template <instance::type_list list, typename T>
-constexpr bool contains = list::template contains<T>;
+struct detail::contains<list, T> {
+  static constexpr bool value = list::template contains<T>;
+};
 
-template <instance::type_list list, size_t index>
-requires(index < size<list>)  //
-    using element = typename list::template element<index>;
+template <instance::type_list list, std::integral auto index>
+requires(0 <= index) && (index < list::size)  //
+    struct detail::element<list, index> {
+  using type = typename list::template element<index>;
+};
 
 template <instance::type_list list>
-requires(!empty<list>)  //
-    using front = typename list::front;
+requires(!list::empty)  //
+    struct detail::front<list> {
+  using type = typename list::front;
+};
 
 template <instance::type_list list>
-requires(!empty<list>)  //
-    using back = typename list::back;
+requires(!list::empty)  //
+    struct detail::back<list> {
+  using type = typename list::back;
+};
 
 template <instance::type_list list, typename T>
 using push_back = typename list::template push_back<T>;

@@ -6,35 +6,102 @@
 using namespace std;
 using namespace lyrahgames::xstd;
 
+// template <typename T, typename U>
+// constexpr U my_function() noexcept;
+// template <typename T, auto x>
+// constexpr decltype(x) my_function() noexcept;
+// static_assert(meta::equal<decltype(my_function<int, int>()), int>);
+// static_assert(meta::equal<decltype(my_function<int, 10>()), int>);
+
+// template <typename T, auto x>
+// using my_alias = decltype(my_function<T, x>());
+// template <typename T, typename x>
+// using my_alias = decltype(my_function<T, x>());
+
+// Using declarations cannot be overloaded or specialized.
+// Concerning template parameters, only functions are allowed
+// to overload them by using concepts or values.
+// The problem is that each function is only able to return a value and not a
+// type. This means that in either case the interface cannot be uniform and
+// consistent.
+
+// Check for emptiness
+//
+// Member Type Function
 static_assert(type_list<>::empty);
-static_assert(type_list<>::size == 0);
 static_assert(!type_list<int>::empty);
+static_assert(!type_list<char, int>::empty);
+static_assert(!type_list<char, int, double>::empty);
+// Non-Member Type Function
+static_assert(meta::empty<type_list<>>);
+static_assert(!meta::empty<type_list<int>>);
+static_assert(!meta::empty<type_list<int, char>>);
+static_assert(!meta::empty<type_list<char, int, double>>);
+
+// Get the number of types
+//
+// Member Type Function
+static_assert(type_list<>::size == 0);
 static_assert(type_list<int>::size == 1);
 static_assert(type_list<char>::size == 1);
 static_assert(type_list<int, char>::size == 2);
-
-static_assert(meta::empty<type_list<>>);
+static_assert(type_list<double, int, char>::size == 3);
+// Non-Member Type Function
 static_assert(meta::size<type_list<>> == 0);
-static_assert(!meta::empty<type_list<int>>);
 static_assert(meta::size<type_list<int>> == 1);
 static_assert(meta::size<type_list<char>> == 1);
 static_assert(meta::size<type_list<int, char>> == 2);
+static_assert(meta::size<type_list<int, char, double>> == 3);
 
-static_assert(meta::equal<meta::push_back<type_list<>, int>, type_list<int>>);
-static_assert(
-    meta::equal<meta::push_back<type_list<int>, char>, type_list<int, char>>);
+// Element Access
+
+// Accessing types by index
+//
+// Member Type Function
+static_assert(meta::equal<type_list<int, char>::element<0>, int>);
+static_assert(meta::equal<type_list<int, char>::element<1>, char>);
+// Non-Member Type Function
+static_assert(meta::equal<meta::element<type_list<int, char>, 0>, int>);
+static_assert(meta::equal<meta::element<type_list<int, char>, 1>, char>);
+
+// Accessing the front
+//
+// Member Type Function
+static_assert(meta::equal<type_list<int>::front, int>);
+static_assert(meta::equal<type_list<int, char>::front, int>);
+static_assert(meta::equal<type_list<double, int, char>::front, double>);
+// Non-Member Type Function
+static_assert(meta::equal<meta::front<type_list<int>>, int>);
+static_assert(meta::equal<meta::front<type_list<char, int>>, char>);
+static_assert(meta::equal<meta::front<type_list<double, char, int>>, double>);
+
+// Accessing the back
+//
+// Member Type Function
+static_assert(meta::equal<type_list<int>::back, int>);
+static_assert(meta::equal<type_list<int, char>::back, char>);
+static_assert(meta::equal<type_list<int, char, double>::back, double>);
+// Non-Member Type Function
+static_assert(meta::equal<meta::back<type_list<int>>, int>);
+static_assert(meta::equal<meta::back<type_list<char, int>>, int>);
+static_assert(meta::equal<meta::back<type_list<double, char, int>>, int>);
+
+static_assert(meta::equal<meta::push_back<type_list<>, int>,  //
+                          type_list<int>>);
+static_assert(meta::equal<meta::push_back<type_list<int>, char>,  //
+                          type_list<int, char>>);
 
 static_assert(meta::equal<type_list<>::push_back<int>, type_list<int>>);
-static_assert(
-    meta::equal<type_list<int>::push_back<char>, type_list<int, char>>);
+static_assert(meta::equal<type_list<int>::push_back<char>,  //
+                          type_list<int, char>>);
 
 static_assert(meta::equal<type_list<>::push_front<int>, type_list<int>>);
-static_assert(
-    meta::equal<type_list<int>::push_front<char>, type_list<char, int>>);
+static_assert(meta::equal<type_list<int>::push_front<char>,  //
+                          type_list<char, int>>);
 
 static_assert(meta::equal<meta::push_front<type_list<>, int>, type_list<int>>);
-static_assert(
-    meta::equal<meta::push_front<type_list<int>, char>, type_list<char, int>>);
+static_assert(meta::equal<meta::push_front<type_list<int>, char>,  //
+                          type_list<char, int>>);
 
 static_assert(!type_list<>::contains<int>);
 static_assert(!type_list<>::contains<char>);
@@ -51,17 +118,6 @@ static_assert(!meta::contains<type_list<int>, char>);
 static_assert(meta::contains<type_list<int, char>, char>);
 static_assert(meta::contains<type_list<int, char>, int>);
 static_assert(!meta::contains<type_list<int, char>, float>);
-
-static_assert(meta::equal<type_list<int, char>::element<0>, int>);
-static_assert(meta::equal<type_list<int, char>::element<1>, char>);
-
-static_assert(meta::equal<meta::element<type_list<int, char>, 0>, int>);
-static_assert(meta::equal<meta::element<type_list<int, char>, 1>, char>);
-
-static_assert(meta::equal<type_list<int>::front, int>);
-static_assert(meta::equal<type_list<int>::back, int>);
-static_assert(meta::equal<type_list<int, char>::front, int>);
-static_assert(meta::equal<type_list<int, char>::back, char>);
 
 static_assert(meta::equal<type_list<>::reverse, type_list<>>);
 static_assert(meta::equal<type_list<int>::reverse, type_list<int>>);

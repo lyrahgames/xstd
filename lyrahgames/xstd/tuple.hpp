@@ -341,8 +341,8 @@ constexpr decltype(auto) element(tuple&& t) {
 namespace meta {
 
 /// Meta function for accessing the element type of a tuple.
-template <typename tuple, size_t index>
-using element = typename detail::element<tuple, index>::type;
+// template <typename tuple, size_t index>
+// using element = typename detail::element<tuple, index>::type;
 
 }  // namespace meta
 

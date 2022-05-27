@@ -52,14 +52,75 @@ concept instantiation = detail::instantiated<U, std::decay_t<T>>::value;
 namespace meta {
 
 template <typename T, typename U>
-concept equal = std::same_as<T, U>;
+constexpr auto equal = std::same_as<T, U>;
+
+namespace detail {
+
+// Access to elements of pack extension by using indices.
+template <size_t index, typename... types>
+struct variadic_projection;
+
+template <size_t index>
+struct variadic_projection<index> {};
+
+template <typename t, typename... types>
+struct variadic_projection<0, t, types...> {
+  using type = t;
+};
+
+template <size_t index, typename t, typename... types>
+struct variadic_projection<index, t, types...> {
+  using type = typename variadic_projection<index - 1, types...>::type;
+};
+
+template <typename T>
+struct size;
+
+template <typename T>
+struct empty;
+
+template <typename T, typename U>
+struct contains;
+
+template <typename T, auto x>
+struct element;
+
+template <typename T>
+struct front;
+
+template <typename T>
+struct back;
+
+}  // namespace detail
+
+template <typename T>
+constexpr auto size = detail::size<T>::value;
+
+template <typename T>
+constexpr auto empty = detail::empty<T>::value;
+
+template <typename T, typename U>
+constexpr auto contains = detail::contains<T, U>::value;
+
+template <typename T, auto x>
+using element = typename detail::element<T, x>::type;
+
+template <typename T>
+using front = typename detail::front<T>::type;
+
+template <typename T>
+using back = typename detail::back<T>::type;
+
+}  // namespace meta
+
+namespace meta {
 
 template <typename T>
 struct function;
 
 template <typename R, typename... Args>
 struct function<std::function<R(Args...)>> {
-  using result    = R;
+  using result = R;
   using arguments = std::tuple<Args...>;
   template <size_t n>
   using argument = std::tuple_element_t<n, std::tuple<Args...>>;
