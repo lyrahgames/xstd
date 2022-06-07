@@ -6,6 +6,21 @@
 // using namespace std;
 using namespace lyrahgames::xstd;
 
+template <typename T, size_t index>
+struct test {
+  using type = T;
+};
+template <typename T>
+struct test<T, 0> {};
+
+template <typename U, typename... T>
+struct my_struct {
+  using type = typename test<my_struct<U, T...>, sizeof...(T)>::type;
+  using type2 = typename test<U, 0>::type;
+};
+
+using my_test = my_struct<int>;
+
 // template <typename T, typename U>
 // constexpr U my_function() noexcept;
 // template <typename T, auto x>
