@@ -486,24 +486,24 @@ static_assert(meta::equal<  //
 //
 // Member Type Function
 static_assert(meta::equal<                              //
-              type_list<>::sort_insert<int, inc_size>,  //
+              type_list<>::insert_when<int, inc_size>,  //
               type_list<int>>);
 //
 static_assert(meta::equal<                                  //
-              type_list<char>::sort_insert<int, inc_size>,  //
+              type_list<char>::insert_when<int, inc_size>,  //
               type_list<char, int>>);
 static_assert(meta::equal<                                    //
-              type_list<double>::sort_insert<int, inc_size>,  //
+              type_list<double>::insert_when<int, inc_size>,  //
               type_list<int, double>>);
 static_assert(meta::equal<                                          //
-              type_list<unsigned int>::sort_insert<int, inc_size>,  //
+              type_list<unsigned int>::insert_when<int, inc_size>,  //
               type_list<int, unsigned int>>);
 //
 static_assert(meta::equal<                                          //
-              type_list<char, double>::sort_insert<int, inc_size>,  //
+              type_list<char, double>::insert_when<int, inc_size>,  //
               type_list<char, int, double>>);
 static_assert(meta::equal<                                                 //
-              type_list<char, short, int>::sort_insert<double, inc_size>,  //
+              type_list<char, short, int>::insert_when<double, inc_size>,  //
               type_list<char, short, int, double>>);
 //
 // Non-Member Type Function
