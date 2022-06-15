@@ -131,6 +131,21 @@ template <instance::type_list list, size_t i, size_t j>
 requires(i < size<list>) && (j < size<list>)  //
     using swap = typename list::template swap<i, j>;
 
+/// Transform algorithm for a type list
+/// which transforms every contained type according to a given predicate.
+// We only provide this interface style
+// because there is no technique in C++
+// to provide variadic template predicates
+// in a lambda expression style.
+template <instance::type_list list, template <typename> typename f>
+using transformation = typename list::template transformation<f>;
+
+/// Generate code based on given lambda expression for each contained type.
+template <instance::type_list list>
+constexpr void for_each(auto&& f) {
+  list::for_each(std::forward<decltype(f)>(f));
+}
+
 }  // namespace meta::type_list
 
 /// Forward declarations for type function details.
@@ -411,6 +426,14 @@ requires(!less<t, front>::value)  //
       front>::type;
 };
 
+//
+template <instance::type_list list, template <typename> typename f>
+struct transformation;
+template <template <typename> typename f, typename... types>
+struct transformation<type_list<types...>, f> {
+  using type = type_list<typename f<types>::type...>;
+};
+
 template <typename... types>
 struct base {
   using self = type_list<types...>;
@@ -464,6 +487,14 @@ struct base {
   template <typename type, template <typename, typename> typename condition>
   using insert_when =
       typename detail::type_list::insert_when<self, type, condition>::type;
+
+  template <template <typename> typename f>
+  using transformation =
+      typename detail::type_list::transformation<self, f>::type;
+
+  static constexpr auto for_each(auto&& f) {
+    (f.template operator()<types>(), ...);
+  }
 };
 
 }  // namespace detail::type_list
