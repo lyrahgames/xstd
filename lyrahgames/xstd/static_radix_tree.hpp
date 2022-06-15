@@ -4,49 +4,32 @@
 
 namespace lyrahgames::xstd {
 
+namespace static_radix_tree {
+
 template <static_zstring str,
           bool leaf = false,
           instance::type_list nodes = type_list<>>
-struct static_radix_node {
+struct node {
   static constexpr static_zstring string = str;
   static constexpr bool is_leaf = leaf;
   using children = nodes;
 };
 
-namespace detail {
-template <typename T>
-struct is_static_radix_node : std::false_type {};
-template <static_zstring str, bool leaf, instance::type_list children>
-struct is_static_radix_node<static_radix_node<str, leaf, children>>
-    : std::true_type {};
-}  // namespace detail
-template <typename T>
-constexpr bool is_static_radix_node = detail::is_static_radix_node<T>::value;
-
-namespace instance {
-template <typename T>
-concept static_radix_node = is_static_radix_node<T>;
-}  // namespace instance
-
-namespace detail::static_radix_tree {
-
-using xstd::type_list;
-using namespace meta::type_list;
-
-template <static_zstring str,
-          bool is_leaf = false,
-          instance::type_list children = type_list<>>
-using node = static_radix_node<str, is_leaf, children>;
-
 template <static_zstring str, instance::type_list children = type_list<>>
 using leaf = node<str, true, children>;
 
+namespace detail {
 template <typename T>
-constexpr bool is_node = xstd::is_static_radix_node<T>;
+struct is_node : std::false_type {};
+template <static_zstring str, bool leaf, instance::type_list children>
+struct is_node<node<str, leaf, children>> : std::true_type {};
+}  // namespace detail
+template <typename T>
+constexpr bool is_node = detail::is_node<T>::value;
 
 namespace instance {
 template <typename T>
-concept node = xstd::instance::static_radix_node<T>;
+concept node = is_node<T>;
 }  // namespace instance
 
 // namespace detail {
@@ -70,45 +53,136 @@ concept node = xstd::instance::static_radix_node<T>;
 //   using children = nodes;
 // };
 
-template <instance::node root, static_zstring str, size_t index>
-struct insertion_helper;
+namespace detail {
 
+using namespace meta::type_list;
+
+// The basic insertion shall insert
+// a single string into the given radix tree.
 template <instance::node root, static_zstring str>
+struct basic_insertion;
+
+// The actual insertion method will allow to insert
+// an arbitrary amount of strings into the given radix tree.
+template <instance::node root, static_zstring... str>
 struct insertion {
-  using type =
-      typename insertion_helper<root,
-                                str,
-                                prefix_match_index(root::string, str)>::type;
+  // If no strings are provided,
+  // the meta function will be an identity.
+  using type = root;
+};
+// In all other cases, the first string is handled by the basic insertion
+// and the following strings again by the insertion method.
+template <instance::node root, static_zstring str, static_zstring... tail>
+struct insertion<root, str, tail...> {
+  using type = typename insertion<typename basic_insertion<root, str>::type,
+                                  tail...>::type;
 };
 
+// For the implementation of the basic insertion mechanism,
+// it is convenient to provide an additional implementation template
+// for which the prefix match index has already been calculated.
 template <instance::node root, static_zstring str, size_t index>
-struct insertion_helper;
+struct basic_insertion_implementation;
+template <instance::node root, static_zstring str>
+struct basic_insertion {
+  static constexpr size_t index = prefix_match_index(root::string, str);
+  using type = typename basic_insertion_implementation<root, str, index>::type;
+};
+
+// The actual implementation of the insertion routine is done recursively.
+// For this, five case have to be taken into account concerning
+// the given string and the node string and their prefix match index.
+//
+// 1. No Match:
+//    Both strings do not match and the index is zero.
+// 2. Full Match:
+//    Both strings are the same and the prefix match index is their length.
+// 3. Node Match:
+//    The node string is fully matched as a prefix by the string.
+//    The prefix match index will be the size of the node string.
+// 4. String Match:
+//    The string is fully matched as a prefix by the node string.
+//    The prefix match index will be the size of the string.
+// 5. Partial Match:
+//    Both strings are matched by a non-empty prefix and
+//    the prefix match index will be smaller than both string sizes.
+//
+// Thereby, we assume that the empty string is used for the root node
+// and that this one matches every string.
+// In all other cases, a prefix match index of zero means no match at all.
 
 // No Match
+// In this case, the insertion should not change the given node at all.
+//
 template <instance::node root, static_zstring str>
 requires(!root::string.empty())  //
-    struct insertion_helper<root, str, 0> {
+    struct basic_insertion_implementation<root, str, 0> {
   using type = root;
 };
 
 // Full Match
-// The full match is a projection and
+// In this case, the path and node already exist inside the tree.
+// The node may not be marked as a leaf.
+// So, we have make it a leaf and leave the rest as it is.
+// The full match is therefore a projection and
 // makes sure that a given string can only be inserted once.
+//
 template <instance::node root, static_zstring str, size_t index>
 requires(index == root::string.size()) && (index == str.size())  //
-    struct insertion_helper<root, str, index> {
-  using type = node<root::string, true, typename root::children>;
+    struct basic_insertion_implementation<root, str, index> {
+  using type = leaf<root::string, typename root::children>;
 };
 
-// Full String Match
+// String Match
+// In this case, the current node needs to be split.
+// The new node will be a leaf with the prefix as its string.
+// The old node with its children will be the child of the new node.
+// Hereby, the string of the old node will be changed to the tail.
+//
 template <instance::node root, static_zstring str, size_t index>
 requires(index < root::string.size()) && (index == str.size())  //
-    struct insertion_helper<root, str, index> {
-  using type = node<str,
-                    true,
+    struct basic_insertion_implementation<root, str, index> {
+  using type = leaf<str,
                     type_list<node<tail<index>(root::string),
                                    root::is_leaf,
                                    typename root::children>>>;
+};
+
+// Partial Match
+// In this case, the current node needs to be split.
+// It will provide two children.
+// One with its former children and the tail of the node string.
+// The other node will provide no children and the tail of the string.
+// The new node itself is no leaf.
+//
+template <instance::node root, static_zstring str, size_t index>
+requires(index < root::string.size()) && (index < str.size())  //
+    struct basic_insertion_implementation<root, str, index> {
+  using first =
+      node<tail<index>(root::string), root::is_leaf, typename root::children>;
+  using second = leaf<tail<index>(str)>;
+  using type = node<prefix<index>(str), false, type_list<first, second>>;
+};
+
+// Node Match
+// This case is a little bit more complex.
+// Because the node was fully matched,
+// the given string tail needs to be forwarded to its children.
+// If no children matches a prefix with the tail,
+// a new node has to be inserted into children of the current node.
+// In the other case, we can finally recursively call the basic insertion.
+//
+template <static_zstring str, xstd::instance::type_list nodes>
+struct first_character_match;
+template <instance::node root, static_zstring str, size_t index, bool match>
+struct full_prefix_insertion_helper;
+template <instance::node root, static_zstring str, size_t index>
+requires(index == root::string.size()) && (index < str.size())  //
+    struct basic_insertion_implementation<root, str, index> {
+  static constexpr bool matched =
+      first_character_match<tail<index>(str), typename root::children>::value;
+  using type =
+      typename full_prefix_insertion_helper<root, str, index, matched>::type;
 };
 
 template <instance::node root,
@@ -125,82 +199,25 @@ struct full_prefix_insertion_helper {
 template <instance::node root, static_zstring str, size_t index>
 struct full_prefix_insertion_helper<root, str, index, true> {
   template <instance::node _>
-  using inserter = insertion<_, tail<index>(str)>;
+  using inserter = basic_insertion<_, tail<index>(str)>;
   using type = node<root::string,
                     root::is_leaf,
                     transformation<typename root::children, inserter>>;
 };
 
-template <static_zstring str, xstd::instance::type_list nodes>
-struct first_character_match;
 template <static_zstring str, typename... types>
 struct first_character_match<str, type_list<types...>> {
   static constexpr bool value = ((str[0] == types::string[0]) || ...);
 };
 
-// Full Prefix Match
-template <instance::node root, static_zstring str, size_t index>
-requires(index == root::string.size()) && (index < str.size())  //
-    struct insertion_helper<root, str, index> {
-  static constexpr bool matched =
-      first_character_match<tail<index>(str), typename root::children>::value;
-  using type =
-      typename full_prefix_insertion_helper<root, str, index, matched>::type;
-};
-
-// Partial Match
-template <instance::node root, static_zstring str, size_t index>
-requires(index < root::string.size()) && (index < str.size())  //
-    struct insertion_helper<root, str, index> {
-  using type = node<prefix<index>(str),
-                    false,
-                    type_list<node<tail<index>(root::string),
-                                   root::is_leaf,
-                                   typename root::children>,
-                              node<tail<index>(str), true, type_list<>>>>;
-};
+}  // namespace detail
 
 template <instance::node root, static_zstring... str>
-struct constructor {
-  using type = root;
-};
-template <instance::node root, static_zstring str, static_zstring... tail>
-struct constructor<root, str, tail...> {
-  using type =
-      typename constructor<typename insertion<root, str>::type, tail...>::type;
-};
-
-// template <typename root, static_zstring prefix = "">
-// struct visit;
-// template <static_zstring prefix,
-//           static_zstring name,
-//           bool is_leaf,
-//           typename... children>
-// struct visit<basic_node<name, is_leaf, children...>, prefix> {
-//   constexpr bool operator()(czstring str, auto&& f) const noexcept {
-//     constexpr auto new_prefix = prefix + name;
-//     const auto tail = prefix_match<name>(str);
-//     if (!tail) return false;
-
-//     if constexpr (is_leaf) {
-//       if (!*tail) {
-//         std::forward<decltype(f)>(f).template operator()<new_prefix>();
-//         return true;
-//       }
-//     } else {
-//       if (!*tail) return false;
-//     }
-
-//     return static_for_each_until<children...>(
-//         [&]<typename root> { return visit<root, new_prefix>{}(tail, f); });
-//   }
-// };
-
-}  // namespace detail::static_radix_tree
+using insertion = typename detail::basic_insertion<root, str...>::type;
 
 template <static_zstring... str>
-using static_radix_tree = typename detail::static_radix_tree::constructor<
-    detail::static_radix_tree::node<"", false, type_list<>>,
-    str...>::type;
+using construction = typename detail::insertion<node<"">, str...>::type;
+
+}  // namespace static_radix_tree
 
 }  // namespace lyrahgames::xstd

@@ -13,7 +13,7 @@ using namespace meta::type_list;
 
 // using type = detail::insertion<static_radix_node<"", true>>;
 
-template <instance::static_radix_node root, static_zstring prefix>
+template <static_radix_tree::instance::node root, static_zstring prefix>
 constexpr void print() {
   using namespace std;
   constexpr auto str = prefix + '|' + root::string;
@@ -32,9 +32,9 @@ constexpr void print() {
 
 SCENARIO("") {
   // using tree = static_radix_tree<"help", "version", "test", "hell">;
-  using tree =
-      static_radix_tree<"help", "version", "helo", "hel", "verbose", "help-me",
-                        "abc", "key", "check", "make", "", "input", "output",
-                        "man", "cheat", "in", "out", "help", "help">;
+  using tree = static_radix_tree::construction<
+      "help", "version", "helo", "hel", "verbose", "help-me", "abc", "key",
+      "check", "make", "", "input", "output", "man", "cheat", "in", "out",
+      "help", "help">;
   print<tree>();
 }
