@@ -7,22 +7,22 @@ namespace lyrahgames::xstd {
 namespace static_radix_tree {
 
 template <static_zstring str,
-          bool leaf = false,
-          instance::type_list nodes = type_list<>>
+          instance::type_list nodes = type_list<>,
+          bool leaf = false>
 struct node {
   static constexpr static_zstring string = str;
-  static constexpr bool is_leaf = leaf;
   using children = nodes;
+  static constexpr bool is_leaf = leaf;
 };
 
 template <static_zstring str, instance::type_list children = type_list<>>
-using leaf = node<str, true, children>;
+using leaf = node<str, children, true>;
 
 namespace detail {
 template <typename T>
 struct is_node : std::false_type {};
-template <static_zstring str, bool leaf, instance::type_list children>
-struct is_node<node<str, leaf, children>> : std::true_type {};
+template <static_zstring str, instance::type_list children, bool is_leaf>
+struct is_node<node<str, children, is_leaf>> : std::true_type {};
 }  // namespace detail
 template <typename T>
 constexpr bool is_node = detail::is_node<T>::value;
@@ -55,6 +55,9 @@ concept node = is_node<T>;
 
 namespace detail {
 
+// We need to use standard type list helper functions.
+// Therefore we make the appropriate namespace available
+// inside this implementation namespace.
 using namespace meta::type_list;
 
 // The basic insertion shall insert
@@ -142,10 +145,9 @@ requires(index == root::string.size()) && (index == str.size())  //
 template <instance::node root, static_zstring str, size_t index>
 requires(index < root::string.size()) && (index == str.size())  //
     struct basic_insertion_implementation<root, str, index> {
-  using type = leaf<str,
-                    type_list<node<tail<index>(root::string),
-                                   root::is_leaf,
-                                   typename root::children>>>;
+  using split =
+      node<tail<index>(root::string), typename root::children, root::is_leaf>;
+  using type = leaf<str, type_list<split>>;
 };
 
 // Partial Match
@@ -159,9 +161,9 @@ template <instance::node root, static_zstring str, size_t index>
 requires(index < root::string.size()) && (index < str.size())  //
     struct basic_insertion_implementation<root, str, index> {
   using first =
-      node<tail<index>(root::string), root::is_leaf, typename root::children>;
+      node<tail<index>(root::string), typename root::children, root::is_leaf>;
   using second = leaf<tail<index>(str)>;
-  using type = node<prefix<index>(str), false, type_list<first, second>>;
+  using type = node<prefix<index>(str), type_list<first, second>>;
 };
 
 // Node Match
@@ -207,7 +209,7 @@ template <instance::node root,
 struct node_match_implementation {
   using new_node = leaf<tail<index>(str)>;
   using new_children = push_back<typename root::children, new_node>;
-  using type = node<root::string, root::is_leaf, new_children>;
+  using type = node<root::string, new_children, root::is_leaf>;
 };
 //
 // When there is a child of the current node
@@ -225,7 +227,7 @@ struct node_match_implementation<root, str, index, true> {
   template <instance::node _>
   using inserter = basic_insertion<_, tail<index>(str)>;
   using new_children = transformation<typename root::children, inserter>;
-  using type = node<root::string, root::is_leaf, new_children>;
+  using type = node<root::string, new_children, root::is_leaf>;
 };
 
 }  // namespace detail
