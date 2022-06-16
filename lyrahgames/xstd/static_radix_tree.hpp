@@ -60,6 +60,15 @@ namespace detail {
 // inside this implementation namespace.
 using namespace meta::type_list;
 
+// We need to provide a total order for nodes based on their strings.
+// So, the static radix tree will be unique when new strings are inserted.
+// But by definition and construction of the radix tree,
+// it suffices to compare the first characters of two given strings.
+template <instance::node p, instance::node q>
+struct node_order {
+  static constexpr bool value = p::string[0] <= q::string[0];
+};
+
 // The basic insertion shall insert
 // a single string into the given radix tree.
 template <instance::node root, static_zstring str>
@@ -157,13 +166,19 @@ requires(index < root::string.size()) && (index == str.size())  //
 // The other node will provide no children and the tail of the string.
 // The new node itself is no leaf.
 //
+// At this point, the order of the insertion is important,
+// if lexicographical order in the radix tree is of interest.
+//
 template <instance::node root, static_zstring str, size_t index>
 requires(index < root::string.size()) && (index < str.size())  //
     struct basic_insertion_implementation<root, str, index> {
   using first =
       node<tail<index>(root::string), typename root::children, root::is_leaf>;
   using second = leaf<tail<index>(str)>;
-  using type = node<prefix<index>(str), type_list<first, second>>;
+  // If order would not be of importance, this line could be used.
+  // using type = node<prefix<index>(str), type_list<first, second>>;
+  using children = insert_when<type_list<first>, second, node_order>;
+  using type = node<prefix<index>(str), children>;
 };
 
 // Node Match
@@ -202,13 +217,19 @@ struct match_existence<str, type_list<types...>> {
 // the given string will be inserted as a new leaf with no children
 // into the current children list of the given node.
 //
+// At this point, the order of the insertion is important,
+// if lexicographical order in the radix tree is of interest.
+//
 template <instance::node root,
           static_zstring str,
           size_t index,
           bool match = false>
 struct node_match_implementation {
   using new_node = leaf<tail<index>(str)>;
-  using new_children = push_back<typename root::children, new_node>;
+  // If order would not be of importance, this line could be used.
+  // using new_children = push_back<typename root::children, new_node>;
+  using new_children =
+      insert_when<typename root::children, new_node, node_order>;
   using type = node<root::string, new_children, root::is_leaf>;
 };
 //
