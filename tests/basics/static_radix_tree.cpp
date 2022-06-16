@@ -30,6 +30,17 @@ constexpr void print() {
   if constexpr (root::is_leaf) cout << '"' << root::string << '"' << endl;
 }
 
+namespace {
+namespace srt = static_radix_tree;
+using srt::leaf;
+using srt::node;
+static_assert(srt::instance::node_list<type_list<>>);
+static_assert(!srt::instance::node_list<type_list<float>>);
+static_assert(srt::instance::node_list<type_list<node<"test">>>);
+static_assert(srt::instance::node_list<type_list<leaf<"">>>);
+static_assert(!srt::instance::node_list<type_list<node<"test">, float>>);
+}  // namespace
+
 SCENARIO("") {
   // using tree = static_radix_tree<"help", "version", "test", "hell">;
   using tree = static_radix_tree::construction<

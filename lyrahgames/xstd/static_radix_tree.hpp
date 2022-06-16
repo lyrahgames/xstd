@@ -6,8 +6,42 @@ namespace lyrahgames::xstd {
 
 namespace static_radix_tree {
 
+// A tree is typically defined as a recursive data structure.
+// So, we would to also provide recursive constraints and concepts.
+// For this, we pre-declare the template predicate which decides
+// if a given is a node of a static radix tree.
+namespace detail {
+template <typename T>
+struct is_node;
+}
+
+/// Alias Type Function to check
+/// if the type is an instance of the node template.
+template <typename T>
+constexpr bool is_node = detail::is_node<T>::value;
+
+/// Check if all types inside a given type list
+/// are instances of the node template.
+template <typename list>
+constexpr bool is_node_list = is_constrained_type_list<list, detail::is_node>;
+
+/// Further alias concepts for node instances and node list instances.
+namespace instance {
+template <typename T>
+concept node = is_node<T>;
+template <typename list>
+concept node_list = is_node_list<list>;
+}  // namespace instance
+
+/// A node list is a type list
+/// which contains only instances of the node template.
+template <instance::node... nodes>
+using node_list = type_list<nodes...>;
+
+/// Finally, the actual node template can be defined
+/// with correct and recursive constraints.
 template <static_zstring str,
-          instance::type_list nodes = type_list<>,
+          instance::node_list nodes = node_list<>,
           bool leaf = false>
 struct node {
   static constexpr static_zstring string = str;
@@ -15,45 +49,19 @@ struct node {
   static constexpr bool is_leaf = leaf;
 };
 
-template <static_zstring str, instance::type_list children = type_list<>>
+/// The leaf is an alias to the node template.
+/// It used to simplify marking nodes as leaves.
+template <static_zstring str, instance::node_list children = node_list<>>
 using leaf = node<str, children, true>;
 
 namespace detail {
+
+// After the definition of the node template,
+// we are able to implement the 'is_node' predicate.
 template <typename T>
 struct is_node : std::false_type {};
-template <static_zstring str, instance::type_list children, bool is_leaf>
+template <static_zstring str, instance::node_list children, bool is_leaf>
 struct is_node<node<str, children, is_leaf>> : std::true_type {};
-}  // namespace detail
-template <typename T>
-constexpr bool is_node = detail::is_node<T>::value;
-
-namespace instance {
-template <typename T>
-concept node = is_node<T>;
-}  // namespace instance
-
-// namespace detail {
-// template <typename T>
-// struct is_node_list : std::false_type {};
-// template <generic::node... nodes>
-// struct is_node_list<type_list<nodes...>> : std::true_type {};
-// }  // namespace detail
-// template <typename T>
-// constexpr bool is_node_list = detail::is_node_list<T>::value;
-
-// namespace generic {
-// template <typename T>
-// concept node_list = is_node_list<T>;
-// }
-
-// template <static_zstring str, bool l, generic::node_list nodes>
-// struct node<str, l, nodes> {
-//   static constexpr static_zstring string = str;
-//   static constexpr bool leaf = l;
-//   using children = nodes;
-// };
-
-namespace detail {
 
 // We need to use standard type list helper functions.
 // Therefore we make the appropriate namespace available
@@ -86,8 +94,8 @@ struct insertion {
 // and the following strings again by the insertion method.
 template <instance::node root, static_zstring str, static_zstring... tail>
 struct insertion<root, str, tail...> {
-  using type = typename insertion<typename basic_insertion<root, str>::type,
-                                  tail...>::type;
+  using new_root = typename basic_insertion<root, str>::type;
+  using type = typename insertion<new_root, tail...>::type;
 };
 
 // For the implementation of the basic insertion mechanism,
@@ -156,7 +164,7 @@ requires(index < root::string.size()) && (index == str.size())  //
     struct basic_insertion_implementation<root, str, index> {
   using split =
       node<tail<index>(root::string), typename root::children, root::is_leaf>;
-  using type = leaf<str, type_list<split>>;
+  using type = leaf<str, node_list<split>>;
 };
 
 // Partial Match
@@ -176,8 +184,8 @@ requires(index < root::string.size()) && (index < str.size())  //
       node<tail<index>(root::string), typename root::children, root::is_leaf>;
   using second = leaf<tail<index>(str)>;
   // If order would not be of importance, this line could be used.
-  // using type = node<prefix<index>(str), type_list<first, second>>;
-  using children = insert_when<type_list<first>, second, node_order>;
+  // using type = node<prefix<index>(str), node_list<first, second>>;
+  using children = insert_when<node_list<first>, second, node_order>;
   using type = node<prefix<index>(str), children>;
 };
 
@@ -189,7 +197,7 @@ requires(index < root::string.size()) && (index < str.size())  //
 // a new node has to be inserted into the children of the current node.
 // In the other case, we can finally recursively call the basic insertion.
 //
-template <static_zstring str, xstd::instance::type_list nodes>
+template <static_zstring str, instance::node_list nodes>
 struct match_existence;
 //
 template <instance::node root, static_zstring str, size_t index, bool match>
@@ -209,7 +217,7 @@ requires(index == root::string.size()) && (index < str.size())  //
 // in addition with some syntax for variadic templates.
 //
 template <static_zstring str, typename... types>
-struct match_existence<str, type_list<types...>> {
+struct match_existence<str, node_list<types...>> {
   static constexpr bool value = ((str[0] == types::string[0]) || ...);
 };
 //

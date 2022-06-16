@@ -29,11 +29,28 @@ struct is_type_list<type_list<types...>> : std::true_type {};
 template <typename T>
 constexpr bool is_type_list = detail::is_type_list<T>::value;
 
+//
+namespace detail {
+template <typename list, template <typename> typename constraint>
+struct is_constrained_type_list : std::false_type {};
+template <template <typename> typename constraint, typename... types>
+struct is_constrained_type_list<type_list<types...>, constraint> {
+  static constexpr bool value = (constraint<types>::value && ...);
+};
+}  // namespace detail
+
+///
+template <typename list, template <typename> typename constraint>
+constexpr bool is_constrained_type_list =
+    detail::is_constrained_type_list<list, constraint>::value;
+
 /// To simplify the usage as concept,
 /// we also provide a concept alias inside the 'instance' namespace.
 namespace instance {
 template <typename T>
 concept type_list = is_type_list<T>;
+template <typename T, template <typename> typename constraint>
+concept constrained_type_list = is_constrained_type_list<T, constraint>;
 }  // namespace instance
 
 /// Helper/Non-Member Type Functions for Type Lists
