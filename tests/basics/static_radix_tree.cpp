@@ -72,6 +72,16 @@ inline void visit(czstring cstr) {
          << endl;
 }
 
+inline void traverse(czstring cstr) {
+  const auto traversed = srt::traverse<tree>(cstr, [&]<static_zstring str> {
+    cout << '"' << cstr << '"' << " visited the prefix \"" << str << "\"!"
+         << endl;
+  });
+  if (!traversed)
+    cout << '"' << cstr << '"'
+         << " has no known prefix inside the static radix tree." << endl;
+}
+
 }  // namespace
 
 SCENARIO("") {
@@ -81,4 +91,12 @@ SCENARIO("") {
   visit("mine");
   visit("long");
   visit("verbose");
+
+  traverse("check");
+  traverse("help");
+  traverse("mine");
+  traverse("long");
+  traverse("verbose");
+  traverse("hela");
+  traverse("key=uiae");
 }

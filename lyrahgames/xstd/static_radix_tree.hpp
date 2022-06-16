@@ -297,7 +297,26 @@ constexpr bool visit(czstring str, auto&& f) {
     if (!*tail) return false;
   }
   return meta::type_list::for_each_until<typename root::children>(
-      [&]<typename child> { return visit<child, new_prefix>(tail, f); });
+      [&]<instance::node child> { return visit<child, new_prefix>(tail, f); });
+}
+
+template <instance::node root, static_zstring prefix = "">
+constexpr bool traverse(czstring str, auto&& f) {
+  const auto tail = prefix_match<root::string>(str);
+  if (tail) {
+    constexpr auto new_prefix = prefix + root::string;
+    const auto found = meta::type_list::for_each_until<typename root::children>(
+        [&]<instance::node child> {
+          return traverse<child, new_prefix>(tail, f);
+        });
+    if constexpr (root::is_leaf) {
+      if (!found)
+        std::forward<decltype(f)>(f).template operator()<new_prefix>();
+      return true;
+    } else
+      return found;
+  } else
+    return false;
 }
 
 }  // namespace static_radix_tree
