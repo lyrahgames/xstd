@@ -169,54 +169,76 @@ requires(index < root::string.size()) && (index < str.size())  //
 // Because the node was fully matched,
 // the given string tail needs to be forwarded to its children.
 // If no children matches a prefix with the tail,
-// a new node has to be inserted into children of the current node.
+// a new node has to be inserted into the children of the current node.
 // In the other case, we can finally recursively call the basic insertion.
 //
 template <static_zstring str, xstd::instance::type_list nodes>
-struct first_character_match;
+struct match_existence;
+//
 template <instance::node root, static_zstring str, size_t index, bool match>
-struct full_prefix_insertion_helper;
+struct node_match_implementation;
+//
 template <instance::node root, static_zstring str, size_t index>
 requires(index == root::string.size()) && (index < str.size())  //
     struct basic_insertion_implementation<root, str, index> {
   static constexpr bool matched =
-      first_character_match<tail<index>(str), typename root::children>::value;
+      match_existence<tail<index>(str), typename root::children>::value;
   using type =
-      typename full_prefix_insertion_helper<root, str, index, matched>::type;
+      typename node_match_implementation<root, str, index, matched>::type;
 };
-
+//
+// Checking if any of the node children matches a prefix of a given string
+// can be simply done by checking the first character
+// in addition with some syntax for variadic templates.
+//
+template <static_zstring str, typename... types>
+struct match_existence<str, type_list<types...>> {
+  static constexpr bool value = ((str[0] == types::string[0]) || ...);
+};
+//
+// If no children matches any prefix,
+// the given string will be inserted as a new leaf with no children
+// into the current children list of the given node.
+//
 template <instance::node root,
           static_zstring str,
           size_t index,
           bool match = false>
-struct full_prefix_insertion_helper {
-  using type = node<root::string,
-                    root::is_leaf,
-                    push_back<typename root::children,
-                              node<tail<index>(str), true, type_list<>>>>;
+struct node_match_implementation {
+  using new_node = leaf<tail<index>(str)>;
+  using new_children = push_back<typename root::children, new_node>;
+  using type = node<root::string, root::is_leaf, new_children>;
 };
-
+//
+// When there is a child of the current node
+// which matches a prefix of the given string
+// then by construction of the radix tree
+// this node has to be unique.
+// In such a case, we syntactically insert the given string into all children
+// by recursively calling the basic insertion function
+// together with the type list transformation algorithm,
+// knowing that all children that do not match any prefix
+// will not be changed by this transformation.
+//
 template <instance::node root, static_zstring str, size_t index>
-struct full_prefix_insertion_helper<root, str, index, true> {
+struct node_match_implementation<root, str, index, true> {
   template <instance::node _>
   using inserter = basic_insertion<_, tail<index>(str)>;
-  using type = node<root::string,
-                    root::is_leaf,
-                    transformation<typename root::children, inserter>>;
-};
-
-template <static_zstring str, typename... types>
-struct first_character_match<str, type_list<types...>> {
-  static constexpr bool value = ((str[0] == types::string[0]) || ...);
+  using new_children = transformation<typename root::children, inserter>;
+  using type = node<root::string, root::is_leaf, new_children>;
 };
 
 }  // namespace detail
 
+/// Non-member type function to insert an arbitrary amount of static strings
+/// into a given static radix tree.
 template <instance::node root, static_zstring... str>
-using insertion = typename detail::basic_insertion<root, str...>::type;
+using insertion = typename detail::insertion<root, str...>::type;
 
+/// Non-member type function to construct and initialize a static radix tree
+/// based on an arbitrary amount of static strings.
 template <static_zstring... str>
-using construction = typename detail::insertion<node<"">, str...>::type;
+using construction = insertion<node<"">, str...>;
 
 }  // namespace static_radix_tree
 
