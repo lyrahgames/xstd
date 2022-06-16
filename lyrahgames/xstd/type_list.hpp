@@ -163,6 +163,12 @@ constexpr void for_each(auto&& f) {
   list::for_each(std::forward<decltype(f)>(f));
 }
 
+///
+template <instance::type_list list>
+constexpr bool for_each_until(auto&& f) {
+  return list::for_each_until(std::forward<decltype(f)>(f));
+}
+
 }  // namespace meta::type_list
 
 /// Forward declarations for type function details.
@@ -451,6 +457,17 @@ struct transformation<type_list<types...>, f> {
   using type = type_list<typename f<types>::type...>;
 };
 
+template <instance::type_list list>
+constexpr bool for_each_until(auto&& f) {
+  if constexpr (list::empty)
+    return false;
+  else {
+    if (f.template operator()<typename front<list>::type>()) return true;
+    return for_each_until<typename pop_front<list>::type>(
+        std::forward<decltype(f)>(f));
+  }
+}
+
 template <typename... types>
 struct base {
   using self = type_list<types...>;
@@ -511,6 +528,11 @@ struct base {
 
   static constexpr auto for_each(auto&& f) {
     (f.template operator()<types>(), ...);
+  }
+
+  static constexpr bool for_each_until(auto&& f) {
+    return detail::type_list::for_each_until<self>(
+        std::forward<decltype(f)>(f));
   }
 };
 

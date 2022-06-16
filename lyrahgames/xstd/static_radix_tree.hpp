@@ -271,6 +271,35 @@ using insertion = typename detail::insertion<root, str...>::type;
 template <static_zstring... str>
 using construction = insertion<node<"">, str...>;
 
+//
+template <static_zstring prefix, size_t index = 0>
+constexpr auto prefix_match(czstring str) noexcept -> czstring {
+  if constexpr (index == prefix.size())
+    return str;
+  else {
+    if (prefix[index] != *str++) return nullptr;
+    return prefix_match<prefix, index + 1>(str);
+  }
+}
+//
+template <instance::node root, static_zstring prefix = "">
+constexpr bool visit(czstring str, auto&& f) {
+  // using namespace meta::type_list;
+  constexpr auto new_prefix = prefix + root::string;
+  const auto tail = prefix_match<root::string>(str);
+  if (!tail) return false;
+  if constexpr (root::is_leaf) {
+    if (!*tail) {
+      std::forward<decltype(f)>(f).template operator()<new_prefix>();
+      return true;
+    }
+  } else {
+    if (!*tail) return false;
+  }
+  return meta::type_list::for_each_until<typename root::children>(
+      [&]<typename child> { return visit<child, new_prefix>(tail, f); });
+}
+
 }  // namespace static_radix_tree
 
 }  // namespace lyrahgames::xstd

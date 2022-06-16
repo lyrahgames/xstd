@@ -39,13 +39,46 @@ static_assert(!srt::instance::node_list<type_list<float>>);
 static_assert(srt::instance::node_list<type_list<node<"test">>>);
 static_assert(srt::instance::node_list<type_list<leaf<"">>>);
 static_assert(!srt::instance::node_list<type_list<node<"test">, float>>);
+
+// using tree = srt<"help", "version", "test", "hell">;
+using tree = srt::construction<  //
+    "help",
+    "version",
+    "helo",
+    "hel",
+    "verbose",
+    "help-me",
+    "abc",
+    "key",
+    "check",
+    "make",
+    "",
+    "input",
+    "output",
+    "man",
+    "cheat",
+    "in",
+    "out",
+    "help",
+    "help">;
+static_assert(srt::instance::node<tree>);
+
+inline void visit(czstring cstr) {
+  const auto visited = srt::visit<tree>(cstr, []<static_zstring str> {
+    cout << '"' << str << '"' << " has been visited!" << endl;
+  });
+  if (!visited)
+    cout << '"' << cstr << '"' << " is not inside the static radix tree."
+         << endl;
+}
+
 }  // namespace
 
 SCENARIO("") {
-  // using tree = static_radix_tree<"help", "version", "test", "hell">;
-  using tree = static_radix_tree::construction<
-      "help", "version", "helo", "hel", "verbose", "help-me", "abc", "key",
-      "check", "make", "", "input", "output", "man", "cheat", "in", "out",
-      "help", "help">;
   print<tree>();
+  visit("check");
+  visit("help");
+  visit("mine");
+  visit("long");
+  visit("verbose");
 }
