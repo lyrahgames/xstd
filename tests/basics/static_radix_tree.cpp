@@ -52,7 +52,6 @@ using tree = srt::construction<  //
     "key",
     "check",
     "make",
-    "",
     "input",
     "output",
     "man",
@@ -73,10 +72,11 @@ inline void visit(czstring cstr) {
 }
 
 inline void traverse(czstring cstr) {
-  const auto traversed = srt::traverse<tree>(cstr, [&]<static_zstring str> {
-    cout << '"' << cstr << '"' << " visited the prefix \"" << str << "\"!"
-         << endl;
-  });
+  const auto traversed =
+      srt::traverse<tree>(cstr, [&]<static_zstring str>(czstring tail) {
+        cout << '"' << cstr << '"' << " visited the prefix \"" << str
+             << "\" with the tail \"" << tail << "\"!" << endl;
+      });
   if (!traversed)
     cout << '"' << cstr << '"'
          << " has no known prefix inside the static radix tree." << endl;
@@ -99,4 +99,5 @@ SCENARIO("") {
   traverse("verbose");
   traverse("hela");
   traverse("key=uiae");
+  traverse("xyz");
 }

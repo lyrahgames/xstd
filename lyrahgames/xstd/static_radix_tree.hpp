@@ -259,6 +259,23 @@ struct node_match_implementation<root, str, index, true> {
   using type = node<root::string, new_children, root::is_leaf>;
 };
 
+// The prefix match tries to match a static prefix
+// given as template parameter in a given dynamic string.
+// Using compiler optimization concerning the inlining of constexpr functions,
+// the generated code should not use any indirected function calls or loops.
+// If no prefix match can be detected the nullptr is returned.
+// Otherwise, the tail of the given dynamic string is returned.
+//
+template <static_zstring prefix, size_t index = 0>
+constexpr auto prefix_match(czstring str) noexcept -> czstring {
+  if constexpr (index == prefix.size())
+    return str;
+  else {
+    if (prefix[index] != *str++) return nullptr;
+    return prefix_match<prefix, index + 1>(str);
+  }
+}
+
 }  // namespace detail
 
 /// Non-member type function to insert an arbitrary amount of static strings
@@ -271,22 +288,19 @@ using insertion = typename detail::insertion<root, str...>::type;
 template <static_zstring... str>
 using construction = insertion<node<"">, str...>;
 
-//
-template <static_zstring prefix, size_t index = 0>
-constexpr auto prefix_match(czstring str) noexcept -> czstring {
-  if constexpr (index == prefix.size())
-    return str;
-  else {
-    if (prefix[index] != *str++) return nullptr;
-    return prefix_match<prefix, index + 1>(str);
-  }
-}
-//
+/// The visit algorithm tries to match the whole string
+/// with a static string contained inside the static radix tree.
+/// If the given string is not contained in the tree,
+/// the algorithm returns false and does not call the function object.
+/// In the other case, the algorithm returns true
+/// and calls the function object
+/// with the static string provided as template parameter.
+///
 template <instance::node root, static_zstring prefix = "">
 constexpr bool visit(czstring str, auto&& f) {
-  // using namespace meta::type_list;
+  using namespace meta::type_list;
   constexpr auto new_prefix = prefix + root::string;
-  const auto tail = prefix_match<root::string>(str);
+  const auto tail = detail::prefix_match<root::string>(str);
   if (!tail) return false;
   if constexpr (root::is_leaf) {
     if (!*tail) {
@@ -296,22 +310,30 @@ constexpr bool visit(czstring str, auto&& f) {
   } else {
     if (!*tail) return false;
   }
-  return meta::type_list::for_each_until<typename root::children>(
+  return for_each_until<typename root::children>(
       [&]<instance::node child> { return visit<child, new_prefix>(tail, f); });
 }
 
+/// The traverse algorithm tries to match the longest prefix
+/// of the given string contained in the given static radix tree.
+/// If no prefix can be matched the algorithm returns false
+/// and does not call the function object.
+/// If a prefix can be matched, the function object is called
+/// with the static prefix and the dynamic tail.
+///
 template <instance::node root, static_zstring prefix = "">
 constexpr bool traverse(czstring str, auto&& f) {
-  const auto tail = prefix_match<root::string>(str);
+  using namespace meta::type_list;
+  const auto tail = detail::prefix_match<root::string>(str);
   if (tail) {
     constexpr auto new_prefix = prefix + root::string;
-    const auto found = meta::type_list::for_each_until<typename root::children>(
-        [&]<instance::node child> {
+    const auto found =
+        for_each_until<typename root::children>([&]<instance::node child> {
           return traverse<child, new_prefix>(tail, f);
         });
     if constexpr (root::is_leaf) {
       if (!found)
-        std::forward<decltype(f)>(f).template operator()<new_prefix>();
+        std::forward<decltype(f)>(f).template operator()<new_prefix>(tail);
       return true;
     } else
       return found;
