@@ -61,6 +61,22 @@ struct static_zstring {
   char data_[N]{};
 };
 
+// These overloads decide whether a given value
+// is an instance of static_zstring.
+// Especially, this is useful for template meta programming with concepts.
+constexpr bool is_static_zstring(auto _) noexcept {
+  return false;
+}
+template <size_t N>
+constexpr bool is_static_zstring(static_zstring<N> _) noexcept {
+  return true;
+}
+
+namespace instance {
+template <auto value>
+concept static_zstring = is_static_zstring(value);
+}
+
 // Provide support for custom literal '_sz'.
 template <static_zstring str>
 constexpr auto operator""_sz() noexcept {
