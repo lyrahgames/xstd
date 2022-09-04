@@ -11,6 +11,7 @@
 !export.build
 !buildfile
 !*manifest
+!*testscript
 
 !COPYING
 !README.md

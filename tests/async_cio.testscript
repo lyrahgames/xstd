@@ -1,0 +1,6 @@
+$* <<EOI >>~/EOO/ == 0
+This is a line of text.
+EOI
+$> This is a line of text.
+/[1-9][0-9]*/
+EOO
