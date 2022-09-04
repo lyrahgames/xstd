@@ -7,3 +7,5 @@ cxx{*}: extension = cpp
 test.target = $cxx.target
 
 cxx.poptions =+ "-I$out_root" "-I$src_root"
+
+config [bool] config.lyrahgames_xstd.test ?= false

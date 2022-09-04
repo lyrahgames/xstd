@@ -9,9 +9,11 @@ description-file: README.md
 url: https://github.com/lyrahgames/lyrahgames-xstd
 email: lyrahgames@mailbox.org
 
-depends: * build2 >= 0.13.0
-depends: * bpkg >= 0.13.0
+depends: * build2 >= 0.15.0
+depends: * bpkg >= 0.15.0
 
-depends: doctest ^ 2.4.0
+depends: doctest ^ 2.4.0 ? ($config.lyrahgames_xstd.test)
 
+requires: linux
+requires: gcc | clang
 requires: c++20
