@@ -1,8 +1,1 @@
-import libs = lyrahgames-xstd%lib{lyrahgames-xstd}
-
-./: basics/
-./: exe{main}: cxx{main} $libs
-./: exe{chrono}: cxx{chrono} $libs
-./: exe{contracts}: cxx{contracts} $libs
-
-./: exe{async_cio}: cxx{async_cio} $libs testscript{async_cio}
+./: {*/ -build/}

@@ -1,0 +1,1 @@
+exe{contracts-test}: {hxx cxx}{**} $libs

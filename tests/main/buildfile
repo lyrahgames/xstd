@@ -1,3 +1,2 @@
-import libs = lyrahgames-xstd%lib{lyrahgames-xstd}
 import libs += doctest%lib{doctest}
 exe{main-tests}: {hxx cxx}{**} $libs

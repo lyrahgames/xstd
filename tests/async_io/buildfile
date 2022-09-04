@@ -1,0 +1,1 @@
+exe{async_io-test}: {hxx cxx}{**} $libs testscript

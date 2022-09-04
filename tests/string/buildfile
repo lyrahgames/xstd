@@ -1,0 +1,1 @@
+exe{string-test}: {hxx cxx}{**} $libs
