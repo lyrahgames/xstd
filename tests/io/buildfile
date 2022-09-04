@@ -1,0 +1,4 @@
+exe{io-test}: {hxx cxx}{**} $libs
+
+exe{io-test}: file{test.txt}: test.stdout = true
+exe{io-test}: test.arguments = $src_base/test.txt
