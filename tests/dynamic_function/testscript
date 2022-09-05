@@ -1,0 +1,16 @@
+$* <<EOI == 0
+exit
+EOI
+
+$* <<EOI >>EOO == 0
+add 1.2 3.4
+print test
+state
+state
+exit
+EOI
+4.6
+test
+0
+1
+EOO

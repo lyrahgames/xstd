@@ -1,0 +1,1 @@
+exe{dynamic_function-test}: {hxx cxx}{**} $libs testscript
