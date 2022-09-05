@@ -1,0 +1,1 @@
+exe{version-test}: {hxx cxx}{**} $libs

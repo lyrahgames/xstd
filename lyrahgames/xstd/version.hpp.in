@@ -1,0 +1,38 @@
+#pragma once
+
+namespace lyrahgames::xstd::version {
+
+// The numeric version format is AAAAABBBBBCCCCCDDDE where:
+//
+// AAAAA - major version number
+// BBBBB - minor version number
+// CCCCC - bugfix version number
+// DDD   - alpha / beta (DDD + 500) version number
+// E     - final (0) / snapshot (1)
+//
+// When DDDE is not 0, 1 is subtracted from AAAAABBBBBCCCCC. For example:
+//
+// Version      AAAAABBBBBCCCCCDDDE
+//
+// 0.1.0        0000000001000000000
+// 0.1.2        0000000001000020000
+// 1.2.3        0000100002000030000
+// 2.2.0-a.1    0000200001999990010
+// 3.0.0-b.2    0000299999999995020
+// 2.2.0-a.1.z  0000200001999990011
+//
+inline constexpr auto number = $lyrahgames_xstd.version.project_number$ULL;
+inline constexpr auto string = "$lyrahgames_xstd.version.project$";
+inline constexpr auto id = "$lyrahgames_xstd.version.project_id$";
+inline constexpr auto full = "$lyrahgames_xstd.version$";
+
+inline constexpr auto major = $lyrahgames_xstd.version.major$;
+inline constexpr auto minor = $lyrahgames_xstd.version.minor$;
+inline constexpr auto patch = $lyrahgames_xstd.version.patch$;
+
+inline constexpr auto pre_release = $lyrahgames_xstd.version.pre_release$;
+
+inline constexpr auto snapshot_sn = $lyrahgames_xstd.version.snapshot_sn$ULL;
+inline constexpr auto snapshot_id = "$lyrahgames_xstd.version.snapshot_id$";
+
+}  // namespace lyrahgames::xstd::version

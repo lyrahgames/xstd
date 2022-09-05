@@ -1,6 +1,6 @@
 $out_root/
 {
-  include ./
+  include lyrahgames/xstd/
 }
 
-export $out_root/$import.target
+export $out_root/lyrahgames/xstd/$import.target
