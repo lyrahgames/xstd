@@ -54,6 +54,16 @@ namespace meta {
 template <typename T, typename U>
 constexpr auto equal = std::same_as<T, U>;
 
+namespace detail {
+template <auto x, auto y>
+struct strict_equal : std::false_type {};
+template <auto x>
+struct strict_equal<x, x> : std::true_type {};
+}  // namespace detail
+
+template <auto x, auto y>
+constexpr bool strict_equal = detail::strict_equal<x, y>::value;
+
 // namespace detail {
 
 // // Access to elements of pack extension by using indices.

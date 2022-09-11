@@ -126,6 +126,23 @@ static_assert(meta::equal<element<type_list<double, int, char>, 0>, double>);
 static_assert(meta::equal<element<type_list<double, int, char>, 1>, int>);
 static_assert(meta::equal<element<type_list<double, int, char>, 2>, char>);
 
+// Get the index of a contained type
+//
+// Member Type Function
+static_assert(type_list<int>::index<int> == 0);
+static_assert(type_list<char, int>::index<char> == 0);
+static_assert(type_list<char, int>::index<int> == 1);
+static_assert(type_list<double, char, int>::index<double> == 0);
+static_assert(type_list<double, char, int>::index<char> == 1);
+static_assert(type_list<double, char, int>::index<int> == 2);
+// Non-Member Type Function
+static_assert(index<type_list<int>, int> == 0);
+static_assert(index<type_list<char, int>, char> == 0);
+static_assert(index<type_list<char, int>, int> == 1);
+static_assert(index<type_list<double, char, int>, double> == 0);
+static_assert(index<type_list<double, char, int>, char> == 1);
+static_assert(index<type_list<double, char, int>, int> == 2);
+
 // Accessing the front
 //
 // Member Type Function
@@ -437,6 +454,40 @@ static_assert(meta::equal<remove<type_list<int, char, float, double>, 2>,  //
                           type_list<int, char, double>>);
 static_assert(meta::equal<remove<type_list<int, char, float, double>, 3>,  //
                           type_list<int, char, float>>);
+
+// Assign values by their index
+//
+// Member Type Function
+static_assert(
+    meta::equal<type_list<int>::assignment<0, char>, type_list<char>>);
+//
+static_assert(meta::equal<type_list<int, char>::assignment<0, float>,
+                          type_list<float, char>>);
+static_assert(meta::equal<type_list<int, char>::assignment<1, float>,
+                          type_list<int, float>>);
+//
+static_assert(meta::equal<type_list<int, char, float>::assignment<0, double>,
+                          type_list<double, char, float>>);
+static_assert(meta::equal<type_list<int, char, float>::assignment<1, double>,
+                          type_list<int, double, float>>);
+static_assert(meta::equal<type_list<int, char, float>::assignment<2, double>,
+                          type_list<int, char, double>>);
+//
+// Non-Member Type Function
+static_assert(
+    meta::equal<assignment<type_list<int>, 0, char>, type_list<char>>);
+//
+static_assert(meta::equal<assignment<type_list<int, char>, 0, float>,
+                          type_list<float, char>>);
+static_assert(meta::equal<assignment<type_list<int, char>, 1, float>,
+                          type_list<int, float>>);
+//
+static_assert(meta::equal<assignment<type_list<int, char, float>, 0, double>,
+                          type_list<double, char, float>>);
+static_assert(meta::equal<assignment<type_list<int, char, float>, 1, double>,
+                          type_list<int, double, float>>);
+static_assert(meta::equal<assignment<type_list<int, char, float>, 2, double>,
+                          type_list<int, char, double>>);
 
 template <typename T, typename U>
 struct inc_size {

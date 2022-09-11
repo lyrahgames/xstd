@@ -83,12 +83,17 @@ constexpr auto size = list::size;
 
 /// Check whether the given type list contains the given type.
 template <instance::type_list list, typename type>
-static constexpr auto contains = list::template contains<type>;
+constexpr auto contains = list::template contains<type>;
 
 // Access types inside the type list by their position.
 template <instance::type_list list, size_t index>
 requires(index < size<list>)  //
     using element = typename list::template element<index>;
+
+/// Get back the first index of the given type contained in the type list.
+template <instance::type_list list, typename type>
+requires(contains<list, type>)  //
+    constexpr auto index = list::template index<type>;
 
 /// Access the first type inside the type list.
 template <instance::type_list list>
@@ -130,6 +135,11 @@ using insert_when = typename list::template insert_when<type, condition>;
 template <instance::type_list list, size_t index>
 requires(index < size<list>)  //
     using remove = typename list::template remove<index>;
+
+/// Assign a new type given by its index.
+template <instance::type_list list, size_t index, typename type>
+requires(index < size<list>)  //
+    using assignment = typename list::template assignment<index, type>;
 
 ///
 template <instance::type_list x, instance::type_list y>
@@ -208,6 +218,19 @@ struct element<type_list<front, tail...>, 0> {
 template <size_t index, typename front, typename... tail>
 struct element<type_list<front, tail...>, index> {
   using type = typename element<type_list<tail...>, index - 1>::type;
+};
+
+//
+template <instance::type_list list, typename type>
+struct index {};
+template <typename t, typename front, typename... tail>
+struct index<type_list<front, tail...>, t> {
+  static constexpr size_t value = 1 + index<type_list<tail...>, t>::value;
+};
+template <typename t, typename front, typename... tail>
+requires(meta::equal<t, front>)  //
+    struct index<type_list<front, tail...>, t> {
+  static constexpr size_t value = 0;
 };
 
 //
@@ -364,6 +387,16 @@ requires(index < list::size)  //
 };
 
 //
+template <instance::type_list list, size_t index, typename t>
+requires(index < list::size)  //
+    struct assignment {
+  using left = typename range<list, 0, index>::type;
+  using right = typename range<list, index + 1, list::size>::type;
+  using new_right = typename push_front<right, t>::type;
+  using type = typename concatenation<left, new_right>::type;
+};
+
+//
 template <instance::type_list left,
           instance::type_list right,
           template <typename, typename>
@@ -487,6 +520,11 @@ struct base {
   using element = typename detail::type_list::element<self, index>::type;
 
   template <typename type>
+  requires(contains<type>)  //
+      static constexpr size_t index =
+          detail::type_list::index<self, type>::value;
+
+  template <typename type>
   using push_front = typename detail::type_list::push_front<self, type>::type;
 
   template <typename type>
@@ -497,6 +535,10 @@ struct base {
 
   template <size_t index>
   using remove = typename detail::type_list::remove<self, index>::type;
+
+  template <size_t index, typename type>
+  using assignment =
+      typename detail::type_list::assignment<self, index, type>::type;
 
   template <size_t first, size_t last>
   using range = typename detail::type_list::range<self, first, last>::type;
