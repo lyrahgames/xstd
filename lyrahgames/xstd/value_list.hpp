@@ -84,7 +84,7 @@ using types = typename list::types;
 
 /// Check whether the given value list contains the given value.
 template <instance::value_list list, auto value>
-constexpr auto contains = list::template contains<value>;
+constexpr bool contains = list::template contains<value>;
 
 /// Access values inside the value list by their position.
 template <instance::value_list list, size_t index>

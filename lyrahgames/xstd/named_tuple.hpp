@@ -43,7 +43,7 @@ requires(strings::size == sizeof...(T))  //
   // constexpr auto tuple() noexcept -> base { return *this; }
 
   template <static_zstring name>
-  static constexpr auto contains = names::template contains<name>;
+  static constexpr bool contains = names::template contains<name>;
 };
 
 namespace detail {

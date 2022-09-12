@@ -46,7 +46,7 @@ SCENARIO("Named Tuple") {
   });
 }
 
-SCENARIO("") {
+SCENARIO("Named Tuple 2") {
   auto package0 = auto_named_tuple<"message">("This is some information.");
 
   int x = 1;
@@ -61,8 +61,11 @@ SCENARIO("") {
   // char*>>);
   // MESSAGE(sizeof(package0));
 
+  value<"message">(package2);
+  value<"severity">(package2) = 2;
+
   // for_each with index set?
-  std::decay_t<decltype(package2)>::names::for_each([&]<auto name> {
+  std::decay_t<decltype(package2)>::names::for_each([&package2]<auto name> {
     MESSAGE(name.data() << " = " << value<name>(package2));
   });
 }
