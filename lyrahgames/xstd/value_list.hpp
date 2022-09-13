@@ -86,6 +86,10 @@ using types = typename list::types;
 template <instance::value_list list, auto value>
 constexpr bool contains = list::template contains<value>;
 
+///
+template <instance::value_list list>
+constexpr bool is_set = list::is_set;
+
 /// Access values inside the value list by their position.
 template <instance::value_list list, size_t index>
 requires(index < size<list>)  //
@@ -217,12 +221,32 @@ struct empty {
   static constexpr bool value = size<list>::value == 0;
 };
 
+template <instance::value_list list, auto x>
+struct contains : std::false_type {};
+template <auto x, auto front, auto... tail>
+struct contains<value_list<front, tail...>, x> {
+  static constexpr bool value =
+      meta::strict_equal<x, front> || contains<value_list<tail...>, x>::value;
+};
+
 //
 template <instance::value_list list>
 struct types;
 template <auto... values>
 struct types<value_list<values...>> {
   using type = xstd::type_list<decltype(values)...>;
+};
+
+//
+template <instance::value_list list>
+struct is_set : std::false_type {};
+template <>
+struct is_set<value_list<>> : std::true_type {};
+template <auto front, auto... tail>
+struct is_set<value_list<front, tail...>> {
+  using tail_list = value_list<tail...>;
+  static constexpr bool value =
+      !contains<tail_list, front>::value && is_set<tail_list>::value;
 };
 
 // Empty lists have no type access.
@@ -555,7 +579,12 @@ struct base {
   using types = typename detail::value_list::types<self>::type;
 
   template <auto value>
-  static constexpr bool contains = (meta::strict_equal<value, values> || ...);
+  // static constexpr bool contains = (meta::strict_equal<value, values> ||
+  // ...);
+  static constexpr bool contains =
+      detail::value_list::contains<self, value>::value;
+
+  static constexpr bool is_set = detail::value_list::is_set<self>::value;
 
   template <size_t index>
   static constexpr decltype(auto) element =

@@ -76,6 +76,18 @@ static_assert(contains<value_list<1, 'c'>, 'c'>);
 static_assert(contains<value_list<1, 'c'>, 1>);
 static_assert(!contains<value_list<1, 'c'>, true>);
 
+// Check whether the given value list is a set
+//
+// Member Type Function
+static_assert(value_list<>::is_set);
+static_assert(value_list<-1>::is_set);
+static_assert(value_list<'c'>::is_set);
+//
+static_assert(value_list<-1, 'c'>::is_set);
+static_assert(value_list<'c', -1>::is_set);
+static_assert(!value_list<'c', 'c'>::is_set);
+static_assert(!value_list<-1, -1>::is_set);
+
 // Accessing types by index
 //
 // Member Type Function
