@@ -1,6 +1,8 @@
-#include <string>
-//
 #include <doctest/doctest.h>
+//
+#include <iomanip>
+#include <iostream>
+#include <string>
 //
 #include <lyrahgames/xstd/named_tuple.hpp>
 
@@ -68,4 +70,34 @@ SCENARIO("Named Tuple 2") {
   std::decay_t<decltype(package2)>::names::for_each([&package2]<auto name> {
     MESSAGE(name.data() << " = " << value<name>(package2));
   });
+}
+
+void print_package(auto&& package) {
+  using package_type = decay_t<decltype(package)>;
+  if constexpr (package_type::template contains<"severity">)
+    cout << (value<"severity">(forward<decltype(package)>(package))
+                 ? ("ERROR: ")
+                 : ("INFO: "));
+  if constexpr (package_type::template contains<"message">)
+    cout << value<"message">(forward<decltype(package)>(package));
+
+  using attributes = typename package_type::names::template try_remove_value<
+      "severity"_sz>::template try_remove_value<"message"_sz>;
+  attributes::for_each([&]<auto name> {
+    cout << " [" << name.data() << " = "
+         << value<name>(forward<decltype(package)>(package)) << "]";
+  });
+  cout << endl;
+}
+
+SCENARIO("") {
+  auto package0 = auto_named_tuple<"message">("This is some information.");
+  auto package1 = push_back<"severity">(package0, 1);
+  auto package2 = push_back<"note">(package0, "Hello, World!"s);
+
+  print_package(package0);
+  print_package(package1);
+  value<"severity">(package1) = 0;
+  print_package(package1);
+  print_package(package2);
 }

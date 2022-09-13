@@ -389,7 +389,7 @@ static_assert(meta::equal<insert<value_list<-1, 'c', true>, 2, nullptr>,  //
 static_assert(meta::equal<insert<value_list<-1, 'c', true>, 3, nullptr>,  //
                           value_list<-1, 'c', true, nullptr>>);
 
-// Remove a type inside the type list given its index
+// Remove a value inside the value list given its index
 //
 // Member Type Function
 static_assert(meta::equal<value_list<-1>::remove<0>, value_list<>>);
@@ -434,6 +434,82 @@ static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 2>,  //
                           value_list<-1, 'c', nullptr>>);
 static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 3>,  //
                           value_list<-1, 'c', true>>);
+
+// Remove a value inside the value list given its index
+//
+// Member Type Function
+static_assert(meta::equal<value_list<-1>::remove_value<-1>, value_list<>>);
+//
+static_assert(
+    meta::equal<value_list<-1, 'c'>::remove_value<-1>, value_list<'c'>>);
+static_assert(
+    meta::equal<value_list<-1, 'c'>::remove_value<'c'>, value_list<-1>>);
+//
+static_assert(meta::equal<value_list<-1, 'c', true>::remove_value<-1>,  //
+                          value_list<'c', true>>);
+static_assert(meta::equal<value_list<-1, 'c', true>::remove_value<'c'>,  //
+                          value_list<-1, true>>);
+static_assert(meta::equal<value_list<-1, 'c', true>::remove_value<true>,  //
+                          value_list<-1, 'c'>>);
+//
+static_assert(
+    meta::equal<value_list<-1, 'c', true, nullptr>::remove_value<-1>,  //
+                value_list<'c', true, nullptr>>);
+static_assert(
+    meta::equal<value_list<-1, 'c', true, nullptr>::remove_value<'c'>,  //
+                value_list<-1, true, nullptr>>);
+static_assert(
+    meta::equal<value_list<-1, 'c', true, nullptr>::remove_value<true>,  //
+                value_list<-1, 'c', nullptr>>);
+static_assert(
+    meta::equal<value_list<-1, 'c', true, nullptr>::remove_value<nullptr>,  //
+                value_list<-1, 'c', true>>);
+//
+// Non-Member Type Function
+static_assert(meta::equal<remove_value<value_list<-1>, -1>, value_list<>>);
+//
+static_assert(
+    meta::equal<remove_value<value_list<-1, 'c'>, -1>, value_list<'c'>>);
+static_assert(
+    meta::equal<remove_value<value_list<-1, 'c'>, 'c'>, value_list<-1>>);
+//
+static_assert(meta::equal<remove_value<value_list<-1, 'c', true>, -1>,  //
+                          value_list<'c', true>>);
+static_assert(meta::equal<remove_value<value_list<-1, 'c', true>, 'c'>,  //
+                          value_list<-1, true>>);
+static_assert(meta::equal<remove_value<value_list<-1, 'c', true>, true>,  //
+                          value_list<-1, 'c'>>);
+//
+static_assert(
+    meta::equal<remove_value<value_list<-1, 'c', true, nullptr>, -1>,  //
+                value_list<'c', true, nullptr>>);
+static_assert(
+    meta::equal<remove_value<value_list<-1, 'c', true, nullptr>, 'c'>,  //
+                value_list<-1, true, nullptr>>);
+static_assert(
+    meta::equal<remove_value<value_list<-1, 'c', true, nullptr>, true>,  //
+                value_list<-1, 'c', nullptr>>);
+static_assert(
+    meta::equal<remove_value<value_list<-1, 'c', true, nullptr>, nullptr>,  //
+                value_list<-1, 'c', true>>);
+
+// Try to remove a value from the value list
+//
+// Member Type Function
+static_assert(meta::equal<value_list<>::try_remove_value<-1>, value_list<>>);
+static_assert(meta::equal<value_list<>::try_remove_value<'c'>, value_list<>>);
+//
+static_assert(meta::equal<value_list<-1>::try_remove_value<-1>, value_list<>>);
+static_assert(
+    meta::equal<value_list<-1>::try_remove_value<'c'>, value_list<-1>>);
+//
+// Non-Member Type Function
+static_assert(meta::equal<try_remove_value<value_list<>, -1>, value_list<>>);
+static_assert(meta::equal<try_remove_value<value_list<>, 'c'>, value_list<>>);
+//
+static_assert(meta::equal<try_remove_value<value_list<-1>, -1>, value_list<>>);
+static_assert(
+    meta::equal<try_remove_value<value_list<-1>, 'c'>, value_list<-1>>);
 
 // Assign values by their index
 //

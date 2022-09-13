@@ -137,6 +137,15 @@ template <instance::value_list list, size_t index>
 requires(index < size<list>)  //
     using remove = typename list::template remove<index>;
 
+///
+template <instance::value_list list, auto value>
+requires(contains<list, value>)  //
+    using remove_value = typename list::template remove_value<value>;
+
+///
+template <instance::value_list list, auto value>
+using try_remove_value = typename list::template try_remove_value<value>;
+
 /// Assign a new value given by its index.
 template <instance::value_list list, size_t index, auto value>
 requires(index < size<list>)  //
@@ -400,6 +409,23 @@ requires(index < list::size)  //
 };
 
 //
+template <instance::value_list list, auto x>
+struct remove_value {
+  using type = typename remove<list, index<list, x>::value>::type;
+};
+
+//
+template <instance::value_list list, auto x>
+struct try_remove_value {
+  using type = list;
+};
+template <instance::value_list list, auto x>
+requires(list::template contains<x>)  //
+    struct try_remove_value<list, x> {
+  using type = typename remove_value<list, x>::type;
+};
+
+//
 template <instance::value_list list, size_t index, auto value>
 requires(index < list::size)  //
     struct assignment {
@@ -550,6 +576,15 @@ struct base {
 
   template <size_t index>
   using remove = typename detail::value_list::remove<self, index>::type;
+
+  template <auto value>
+  requires(contains<value>)  //
+      using remove_value =
+          typename detail::value_list::remove_value<self, value>::type;
+
+  template <auto value>
+  using try_remove_value =
+      typename detail::value_list::try_remove_value<self, value>::type;
 
   template <size_t index, auto value>
   using assignment =
