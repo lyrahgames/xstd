@@ -101,3 +101,21 @@ SCENARIO("") {
   print_package(package1);
   print_package(package2);
 }
+
+SCENARIO("Offset of Named Tuple Elements") {
+  struct package_struct {
+    char first;
+    double second;
+    int third;
+  };
+  auto package = auto_named_tuple<"first", "second", "third">('c', 3.14, -1);
+
+  static_assert(sizeof(package) == sizeof(package_struct));
+  static_assert(alignof(package) == alignof(package_struct));
+  static_assert(offset<decltype(package), "first">() ==
+                offsetof(package_struct, first));
+  static_assert(offset<decltype(package), "second">() ==
+                offsetof(package_struct, second));
+  static_assert(offset<decltype(package), "third">() ==
+                offsetof(package_struct, third));
+}

@@ -66,6 +66,18 @@ template <typename T>
 concept named_tuple = instance::named_tuple<std::decay_t<T>>;
 }
 
+///
+template <instance::named_tuple list, size_t index>
+consteval auto offset() noexcept {
+  return list::types::template offset<index>;
+}
+
+///
+template <instance::named_tuple list, static_zstring name>
+consteval auto offset() noexcept {
+  return offset<list, list::names::template index<name>>();
+}
+
 template <static_zstring... names, typename... types>
 constexpr auto auto_named_tuple(types&&... t) noexcept {
   return named_tuple<static_zstring_list<names...>,
