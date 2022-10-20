@@ -91,6 +91,86 @@ static_assert(size<type_list<char>> == 1);
 static_assert(size<type_list<int, char>> == 2);
 static_assert(size<type_list<int, char, double>> == 3);
 
+// Get the offset of the indexed type
+//
+// Member and Non-Member Type Functions
+static_assert(type_list<int>::offset<0> == 0);
+static_assert(offset<type_list<int>, 0> == 0);
+//
+//
+namespace {
+struct A {
+  int a;
+  char b;
+};
+using AT = type_list<int, char>;
+}  // namespace
+static_assert(AT::offset<0> == offsetof(A, a));
+static_assert(AT::offset<1> == offsetof(A, b));
+static_assert(offset<AT, 0> == offsetof(A, a));
+static_assert(offset<AT, 1> == offsetof(A, b));
+//
+//
+namespace {
+struct B {
+  char a;
+  int b;
+};
+using BT = type_list<char, int>;
+}  // namespace
+static_assert(BT::offset<0> == offsetof(B, a));
+static_assert(BT::offset<1> == offsetof(B, b));
+static_assert(offset<BT, 0> == offsetof(B, a));
+static_assert(offset<BT, 1> == offsetof(B, b));
+//
+//
+namespace {
+struct C {
+  char a;
+  int b;
+  double c;
+};
+using CT = type_list<char, int, double>;
+}  // namespace
+static_assert(CT::offset<0> == offsetof(C, a));
+static_assert(CT::offset<1> == offsetof(C, b));
+static_assert(CT::offset<2> == offsetof(C, c));
+static_assert(offset<CT, 0> == offsetof(C, a));
+static_assert(offset<CT, 1> == offsetof(C, b));
+static_assert(offset<CT, 2> == offsetof(C, c));
+//
+//
+namespace {
+struct D {
+  char a;
+  double b;
+  int c;
+};
+using DT = type_list<char, double, int>;
+}  // namespace
+static_assert(DT::offset<0> == offsetof(D, a));
+static_assert(DT::offset<1> == offsetof(D, b));
+static_assert(DT::offset<2> == offsetof(D, c));
+static_assert(offset<DT, 0> == offsetof(D, a));
+static_assert(offset<DT, 1> == offsetof(D, b));
+static_assert(offset<DT, 2> == offsetof(D, c));
+//
+//
+namespace {
+struct E {
+  double a;
+  char b;
+  int c;
+};
+using ET = type_list<double, char, int>;
+}  // namespace
+static_assert(ET::offset<0> == offsetof(E, a));
+static_assert(ET::offset<1> == offsetof(E, b));
+static_assert(ET::offset<2> == offsetof(E, c));
+static_assert(offset<ET, 0> == offsetof(E, a));
+static_assert(offset<ET, 1> == offsetof(E, b));
+static_assert(offset<ET, 2> == offsetof(E, c));
+
 // Check if type list contains a specific type.
 //
 // Member Type Function

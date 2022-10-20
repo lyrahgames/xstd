@@ -81,6 +81,12 @@ constexpr auto empty = list::empty;
 template <instance::type_list list>
 constexpr auto size = list::size;
 
+/// Returns the offset of an indexed type inside the type list
+/// in the case you would create a tuple out of it.
+template <instance::type_list list, size_t index>
+requires(index < size<list>)  //
+    constexpr auto offset = list::template offset<index>;
+
 /// Check whether the given type list contains the given type.
 template <instance::type_list list, typename type>
 constexpr auto contains = list::template contains<type>;
@@ -218,6 +224,23 @@ struct element<type_list<front, tail...>, 0> {
 template <size_t index, typename front, typename... tail>
 struct element<type_list<front, tail...>, index> {
   using type = typename element<type_list<tail...>, index - 1>::type;
+};
+
+//
+template <instance::type_list list, size_t index>  //
+struct offset {
+  static constexpr auto round_up(size_t offset, size_t alignment) noexcept
+      -> size_t {
+    return offset + (alignment - 1 - ((offset + alignment - 1) % alignment));
+  }
+  static constexpr size_t value =
+      round_up(offset<list, index - 1>::value +
+                   sizeof(typename element<list, index - 1>::type),
+               alignof(typename element<list, index>::type));
+};
+template <instance::type_list list>  //
+struct offset<list, 0> {
+  static constexpr size_t value = 0;
 };
 
 //
@@ -506,6 +529,11 @@ struct base {
   using self = type_list<types...>;
 
   static constexpr size_t size = detail::type_list::size<self>::value;
+
+  template <size_t index>
+  requires(index < size)  //
+      static constexpr size_t offset =
+          detail::type_list::offset<self, index>::value;
 
   static constexpr bool empty = detail::type_list::empty<self>::value;
 
