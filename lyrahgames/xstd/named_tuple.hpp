@@ -69,7 +69,7 @@ concept named_tuple = instance::named_tuple<std::decay_t<T>>;
 ///
 template <instance::named_tuple list, size_t index>
 consteval auto offset() noexcept {
-  return list::types::template offset<index>;
+  return list::types::template tuple_offset<index>;
 }
 
 ///

@@ -1,5 +1,7 @@
 #include <doctest/doctest.h>
 //
+#include <cstdint>
+//
 #include <lyrahgames/xstd/meta.hpp>
 #include <lyrahgames/xstd/type_list.hpp>
 
@@ -91,11 +93,23 @@ static_assert(size<type_list<char>> == 1);
 static_assert(size<type_list<int, char>> == 2);
 static_assert(size<type_list<int, char, double>> == 3);
 
-// Get the offset of the indexed type
+// Byte Size, Alignment, Member Offsets, and Member Padding
 //
+namespace {
+struct empty_type {};
+}  // namespace
 // Member and Non-Member Type Functions
-static_assert(type_list<int>::offset<0> == 0);
-static_assert(offset<type_list<int>, 0> == 0);
+static_assert(type_list<int>::alignment == alignof(int));
+static_assert(alignment<type_list<int>> == alignof(int));
+//
+static_assert(type_list<int>::struct_byte_size == sizeof(int));
+static_assert(struct_byte_size<type_list<int>> == sizeof(int));
+//
+static_assert(type_list<int>::struct_offset<0> == 0);
+static_assert(struct_offset<type_list<int>, 0> == 0);
+//
+static_assert(type_list<int>::struct_padding<0> == 0);
+static_assert(struct_padding<type_list<int>, 0> == 0);
 //
 //
 namespace {
@@ -105,10 +119,28 @@ struct A {
 };
 using AT = type_list<int, char>;
 }  // namespace
-static_assert(AT::offset<0> == offsetof(A, a));
-static_assert(AT::offset<1> == offsetof(A, b));
-static_assert(offset<AT, 0> == offsetof(A, a));
-static_assert(offset<AT, 1> == offsetof(A, b));
+static_assert(AT::alignment == alignof(A));
+static_assert(alignment<AT> == alignof(A));
+//
+static_assert(AT::struct_byte_size == sizeof(A));
+static_assert(struct_byte_size<AT> == sizeof(A));
+//
+static_assert(AT::struct_offset<0> == offsetof(A, a));
+static_assert(AT::struct_offset<1> == offsetof(A, b));
+static_assert(struct_offset<AT, 0> == offsetof(A, a));
+static_assert(struct_offset<AT, 1> == offsetof(A, b));
+//
+static_assert(AT::tuple_offset<0> == offsetof(A, a));
+static_assert(AT::tuple_offset<1> == offsetof(A, b));
+static_assert(tuple_offset<AT, 0> == offsetof(A, a));
+static_assert(tuple_offset<AT, 1> == offsetof(A, b));
+//
+static_assert(AT::struct_padding<0> ==
+              offsetof(A, b) - offsetof(A, a) - sizeof(A::a));
+static_assert(AT::struct_padding<1> ==
+              sizeof(A) - offsetof(A, b) - sizeof(A::b));
+static_assert(struct_padding<AT, 0> == AT::struct_padding<0>);
+static_assert(struct_padding<AT, 1> == AT::struct_padding<1>);
 //
 //
 namespace {
@@ -118,10 +150,28 @@ struct B {
 };
 using BT = type_list<char, int>;
 }  // namespace
-static_assert(BT::offset<0> == offsetof(B, a));
-static_assert(BT::offset<1> == offsetof(B, b));
-static_assert(offset<BT, 0> == offsetof(B, a));
-static_assert(offset<BT, 1> == offsetof(B, b));
+static_assert(BT::alignment == alignof(B));
+static_assert(alignment<BT> == alignof(B));
+//
+static_assert(BT::struct_byte_size == sizeof(B));
+static_assert(struct_byte_size<BT> == sizeof(B));
+//
+static_assert(BT::struct_offset<0> == offsetof(B, a));
+static_assert(BT::struct_offset<1> == offsetof(B, b));
+static_assert(struct_offset<BT, 0> == offsetof(B, a));
+static_assert(struct_offset<BT, 1> == offsetof(B, b));
+//
+static_assert(BT::tuple_offset<0> == offsetof(B, a));
+static_assert(BT::tuple_offset<1> == offsetof(B, b));
+static_assert(tuple_offset<BT, 0> == offsetof(B, a));
+static_assert(tuple_offset<BT, 1> == offsetof(B, b));
+//
+static_assert(BT::struct_padding<0> ==
+              offsetof(B, b) - offsetof(B, a) - sizeof(B::a));
+static_assert(BT::struct_padding<1> ==
+              sizeof(B) - offsetof(B, b) - sizeof(B::b));
+static_assert(struct_padding<BT, 0> == BT::struct_padding<0>);
+static_assert(struct_padding<BT, 1> == BT::struct_padding<1>);
 //
 //
 namespace {
@@ -132,12 +182,35 @@ struct C {
 };
 using CT = type_list<char, int, double>;
 }  // namespace
-static_assert(CT::offset<0> == offsetof(C, a));
-static_assert(CT::offset<1> == offsetof(C, b));
-static_assert(CT::offset<2> == offsetof(C, c));
-static_assert(offset<CT, 0> == offsetof(C, a));
-static_assert(offset<CT, 1> == offsetof(C, b));
-static_assert(offset<CT, 2> == offsetof(C, c));
+static_assert(CT::alignment == alignof(C));
+static_assert(alignment<CT> == alignof(C));
+//
+static_assert(CT::struct_byte_size == sizeof(C));
+static_assert(struct_byte_size<CT> == sizeof(C));
+//
+static_assert(CT::struct_offset<0> == offsetof(C, a));
+static_assert(CT::struct_offset<1> == offsetof(C, b));
+static_assert(CT::struct_offset<2> == offsetof(C, c));
+static_assert(struct_offset<CT, 0> == offsetof(C, a));
+static_assert(struct_offset<CT, 1> == offsetof(C, b));
+static_assert(struct_offset<CT, 2> == offsetof(C, c));
+//
+static_assert(CT::tuple_offset<0> == offsetof(C, a));
+static_assert(CT::tuple_offset<1> == offsetof(C, b));
+static_assert(CT::tuple_offset<2> == offsetof(C, c));
+static_assert(tuple_offset<CT, 0> == offsetof(C, a));
+static_assert(tuple_offset<CT, 1> == offsetof(C, b));
+static_assert(tuple_offset<CT, 2> == offsetof(C, c));
+//
+static_assert(CT::struct_padding<0> ==
+              offsetof(C, b) - offsetof(C, a) - sizeof(C::a));
+static_assert(CT::struct_padding<1> ==
+              offsetof(C, c) - offsetof(C, b) - sizeof(C::b));
+static_assert(CT::struct_padding<2> ==
+              sizeof(C) - offsetof(C, c) - sizeof(C::c));
+static_assert(struct_padding<CT, 0> == CT::struct_padding<0>);
+static_assert(struct_padding<CT, 1> == CT::struct_padding<1>);
+static_assert(struct_padding<CT, 2> == CT::struct_padding<2>);
 //
 //
 namespace {
@@ -148,12 +221,35 @@ struct D {
 };
 using DT = type_list<char, double, int>;
 }  // namespace
-static_assert(DT::offset<0> == offsetof(D, a));
-static_assert(DT::offset<1> == offsetof(D, b));
-static_assert(DT::offset<2> == offsetof(D, c));
-static_assert(offset<DT, 0> == offsetof(D, a));
-static_assert(offset<DT, 1> == offsetof(D, b));
-static_assert(offset<DT, 2> == offsetof(D, c));
+static_assert(DT::alignment == alignof(D));
+static_assert(alignment<DT> == alignof(D));
+//
+static_assert(DT::struct_byte_size == sizeof(D));
+static_assert(struct_byte_size<DT> == sizeof(D));
+//
+static_assert(DT::struct_offset<0> == offsetof(D, a));
+static_assert(DT::struct_offset<1> == offsetof(D, b));
+static_assert(DT::struct_offset<2> == offsetof(D, c));
+static_assert(struct_offset<DT, 0> == offsetof(D, a));
+static_assert(struct_offset<DT, 1> == offsetof(D, b));
+static_assert(struct_offset<DT, 2> == offsetof(D, c));
+//
+static_assert(DT::tuple_offset<0> == offsetof(D, a));
+static_assert(DT::tuple_offset<1> == offsetof(D, b));
+static_assert(DT::tuple_offset<2> == offsetof(D, c));
+static_assert(tuple_offset<DT, 0> == offsetof(D, a));
+static_assert(tuple_offset<DT, 1> == offsetof(D, b));
+static_assert(tuple_offset<DT, 2> == offsetof(D, c));
+//
+static_assert(DT::struct_padding<0> ==
+              offsetof(D, b) - offsetof(D, a) - sizeof(D::a));
+static_assert(DT::struct_padding<1> ==
+              offsetof(D, c) - offsetof(D, b) - sizeof(D::b));
+static_assert(DT::struct_padding<2> ==
+              sizeof(D) - offsetof(D, c) - sizeof(D::c));
+static_assert(struct_padding<DT, 0> == DT::struct_padding<0>);
+static_assert(struct_padding<DT, 1> == DT::struct_padding<1>);
+static_assert(struct_padding<DT, 2> == DT::struct_padding<2>);
 //
 //
 namespace {
@@ -164,12 +260,99 @@ struct E {
 };
 using ET = type_list<double, char, int>;
 }  // namespace
-static_assert(ET::offset<0> == offsetof(E, a));
-static_assert(ET::offset<1> == offsetof(E, b));
-static_assert(ET::offset<2> == offsetof(E, c));
-static_assert(offset<ET, 0> == offsetof(E, a));
-static_assert(offset<ET, 1> == offsetof(E, b));
-static_assert(offset<ET, 2> == offsetof(E, c));
+static_assert(ET::alignment == alignof(E));
+static_assert(alignment<ET> == alignof(E));
+//
+static_assert(ET::struct_byte_size == sizeof(E));
+static_assert(struct_byte_size<ET> == sizeof(E));
+//
+static_assert(ET::struct_offset<0> == offsetof(E, a));
+static_assert(ET::struct_offset<1> == offsetof(E, b));
+static_assert(ET::struct_offset<2> == offsetof(E, c));
+static_assert(struct_offset<ET, 0> == offsetof(E, a));
+static_assert(struct_offset<ET, 1> == offsetof(E, b));
+static_assert(struct_offset<ET, 2> == offsetof(E, c));
+//
+static_assert(ET::tuple_offset<0> == offsetof(E, a));
+static_assert(ET::tuple_offset<1> == offsetof(E, b));
+static_assert(ET::tuple_offset<2> == offsetof(E, c));
+static_assert(tuple_offset<ET, 0> == offsetof(E, a));
+static_assert(tuple_offset<ET, 1> == offsetof(E, b));
+static_assert(tuple_offset<ET, 2> == offsetof(E, c));
+//
+static_assert(ET::struct_padding<0> ==
+              offsetof(E, b) - offsetof(E, a) - sizeof(E::a));
+static_assert(ET::struct_padding<1> ==
+              offsetof(E, c) - offsetof(E, b) - sizeof(E::b));
+static_assert(ET::struct_padding<2> ==
+              sizeof(E) - offsetof(E, c) - sizeof(E::c));
+static_assert(struct_padding<ET, 0> == ET::struct_padding<0>);
+static_assert(struct_padding<ET, 1> == ET::struct_padding<1>);
+static_assert(struct_padding<ET, 2> == ET::struct_padding<2>);
+//
+//
+namespace {
+struct F {
+  char a;
+  double b;
+  empty_type c;
+  int d;
+};
+// using FV = std::tuple<empty_type, double, char, int>;
+using FV = std::tuple<char, double, empty_type, int>;
+using FT = type_list<char, double, empty_type, int>;
+}  // namespace
+static_assert(FT::alignment == alignof(F));
+static_assert(alignment<FT> == alignof(F));
+//
+static_assert(FT::struct_byte_size == sizeof(F));
+static_assert(struct_byte_size<FT> == sizeof(F));
+//
+static_assert(FT::tuple_byte_size == sizeof(FV));
+static_assert(tuple_byte_size<FT> == sizeof(FV));
+//
+static_assert(FT::struct_offset<0> == offsetof(F, a));
+static_assert(FT::struct_offset<1> == offsetof(F, b));
+static_assert(FT::struct_offset<2> == offsetof(F, c));
+static_assert(FT::struct_offset<3> == offsetof(F, d));
+static_assert(struct_offset<FT, 0> == offsetof(F, a));
+static_assert(struct_offset<FT, 1> == offsetof(F, b));
+static_assert(struct_offset<FT, 2> == offsetof(F, c));
+static_assert(struct_offset<FT, 3> == offsetof(F, d));
+//
+// SCENARIO("") {
+//   FV f{};
+
+//   CHECK(FT::tuple_offset<0> ==
+//         static_cast<size_t>(reinterpret_cast<uintptr_t>(&get<0>(f)) -
+//                             reinterpret_cast<uintptr_t>(&f)));
+//   CHECK(FT::tuple_offset<1> ==
+//         static_cast<size_t>(reinterpret_cast<uintptr_t>(&get<1>(f)) -
+//                             reinterpret_cast<uintptr_t>(&f)));
+//   CHECK(FT::tuple_offset<2> ==
+//         static_cast<size_t>(reinterpret_cast<uintptr_t>(&get<2>(f)) -
+//                             reinterpret_cast<uintptr_t>(&f)));
+//   CHECK(FT::tuple_offset<3> ==
+//         static_cast<size_t>(reinterpret_cast<uintptr_t>(&get<3>(f)) -
+//                             reinterpret_cast<uintptr_t>(&f)));
+// }
+static_assert(FT::tuple_offset<1> == offsetof(F, b));
+static_assert(FT::tuple_offset<2> == offsetof(F, c));
+static_assert(tuple_offset<FT, 0> == offsetof(F, a));
+static_assert(tuple_offset<FT, 1> == offsetof(F, b));
+static_assert(tuple_offset<FT, 2> == offsetof(F, c));
+//
+static_assert(FT::struct_padding<0> ==
+              offsetof(F, b) - offsetof(F, a) - sizeof(F::a));
+static_assert(FT::struct_padding<1> ==
+              offsetof(F, c) - offsetof(F, b) - sizeof(F::b));
+static_assert(FT::struct_padding<2> ==
+              offsetof(F, d) - offsetof(F, c) - sizeof(F::c));
+static_assert(FT::struct_padding<3> ==
+              sizeof(F) - offsetof(F, d) - sizeof(F::d));
+static_assert(struct_padding<FT, 0> == FT::struct_padding<0>);
+static_assert(struct_padding<FT, 1> == FT::struct_padding<1>);
+static_assert(struct_padding<FT, 2> == FT::struct_padding<2>);
 
 // Check if type list contains a specific type.
 //

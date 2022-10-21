@@ -81,11 +81,46 @@ constexpr auto empty = list::empty;
 template <instance::type_list list>
 constexpr auto size = list::size;
 
+/// Returns the alignment of the whole type list
+/// as if the list would be a struct or a tuple.
+template <instance::type_list list>
+constexpr auto alignment = list::alignment;
+
+/// Returns the byte size of the whole type list
+/// as if the type list would be a struct
+/// only containing member variables with type and order
+/// as given by the types of the type list.
+template <instance::type_list list>
+constexpr auto struct_byte_size = list::struct_byte_size;
+
+/// Returns the byte size of the whole type list
+/// as if the type list would be a tuple.
+/// This means empty types should not increase the size of the tuple.
+template <instance::type_list list>
+constexpr auto tuple_byte_size = list::tuple_byte_size;
+
 /// Returns the offset of an indexed type inside the type list
-/// in the case you would create a tuple out of it.
+/// as if the type list would be a struct
+/// only containing member variables with type and order
+/// as given by the types of the type list.
 template <instance::type_list list, size_t index>
 requires(index < size<list>)  //
-    constexpr auto offset = list::template offset<index>;
+    constexpr auto struct_offset = list::template struct_offset<index>;
+
+/// Returns the offset of an indexed type inside the type list
+/// as if the type list would be a tuple.
+/// This means empty types should not increase the size of the tuple.
+template <instance::type_list list, size_t index>
+requires(index < size<list>)  //
+    constexpr auto tuple_offset = list::template tuple_offset<index>;
+
+/// Returns the padding of an indexed type up to the following type
+/// inside the type list as if the type list would be a struct
+/// only containing member variables with type and order
+/// as given by the types of the type list.
+template <instance::type_list list, size_t index>
+requires(index < size<list>)  //
+    constexpr auto struct_padding = list::template struct_padding<index>;
 
 /// Check whether the given type list contains the given type.
 template <instance::type_list list, typename type>
@@ -227,23 +262,6 @@ struct element<type_list<front, tail...>, index> {
 };
 
 //
-template <instance::type_list list, size_t index>  //
-struct offset {
-  static constexpr auto round_up(size_t offset, size_t alignment) noexcept
-      -> size_t {
-    return offset + (alignment - 1 - ((offset + alignment - 1) % alignment));
-  }
-  static constexpr size_t value =
-      round_up(offset<list, index - 1>::value +
-                   sizeof(typename element<list, index - 1>::type),
-               alignof(typename element<list, index>::type));
-};
-template <instance::type_list list>  //
-struct offset<list, 0> {
-  static constexpr size_t value = 0;
-};
-
-//
 template <instance::type_list list, typename type>
 struct index {};
 template <typename t, typename front, typename... tail>
@@ -274,6 +292,99 @@ struct back<type_list<t>> {
 template <typename t, typename... types>
 struct back<type_list<t, types...>> {
   using type = typename back<type_list<types...>>::type;
+};
+
+//
+constexpr auto aligned_offset_padding(size_t offset, size_t alignment) noexcept
+    -> size_t {
+  return alignment - 1 - ((offset + alignment - 1) % alignment);
+}
+
+//
+constexpr auto aligned_offset(size_t offset, size_t alignment) noexcept
+    -> size_t {
+  return offset + aligned_offset_padding(offset, alignment);
+}
+
+// For empty structs or tuples, the alignment is 1.
+template <instance::type_list list>
+struct alignment {
+  static constexpr size_t value = 1;
+};
+template <typename front, typename... tail>
+struct alignment<type_list<front, tail...>> {
+  static constexpr size_t value =
+      std::max(alignof(front), alignment<type_list<tail...>>::value);
+};
+
+//
+template <instance::type_list list, size_t index>  //
+struct struct_offset {
+  static constexpr size_t value =
+      aligned_offset(struct_offset<list, index - 1>::value +
+                         sizeof(typename element<list, index - 1>::type),
+                     alignof(typename element<list, index>::type));
+};
+template <instance::type_list list>  //
+struct struct_offset<list, 0> {
+  static constexpr size_t value = 0;
+};
+
+//
+template <instance::type_list list, size_t index>
+struct tuple_offset {
+  using type = typename element<list, index - 1>::type;
+  static constexpr size_t byte_size = std::is_empty_v<type> ? 0 : sizeof(type);
+  static constexpr size_t value =
+      aligned_offset(tuple_offset<list, index - 1>::value + byte_size,
+                     alignof(typename element<list, index>::type));
+  ;
+};
+template <instance::type_list list>  //
+struct tuple_offset<list, 0> {
+  static constexpr size_t value = 0;
+};
+
+//
+template <instance::type_list list>
+struct struct_byte_size {
+  static constexpr size_t value =
+      aligned_offset(struct_offset<list, size<list>::value - 1>::value +
+                         sizeof(typename back<list>::type),
+                     alignment<list>::value);
+};
+template <>
+struct struct_byte_size<type_list<>> {
+  static constexpr size_t value = 1;
+};
+
+//
+template <instance::type_list list>
+struct tuple_byte_size {
+  using type = typename back<list>::type;
+  static constexpr size_t byte_size = std::is_empty_v<type> ? 0 : sizeof(type);
+  static constexpr size_t value = aligned_offset(
+      tuple_offset<list, size<list>::value - 1>::value + byte_size,
+      alignment<list>::value);
+};
+template <>
+struct tuple_byte_size<type_list<>> {
+  static constexpr size_t value = 1;
+};
+
+//
+template <instance::type_list list, size_t index>
+struct struct_padding {
+  static constexpr size_t value = struct_offset<list, index + 1>::value -
+                                  struct_offset<list, index>::value -
+                                  sizeof(typename element<list, index>::type);
+};
+template <instance::type_list list, size_t index>
+requires(index == list::size - 1)  //
+    struct struct_padding<list, index> {
+  static constexpr size_t value = struct_byte_size<list>::value -
+                                  struct_offset<list, index>::value -
+                                  sizeof(typename back<list>::type);
 };
 
 //
@@ -530,10 +641,26 @@ struct base {
 
   static constexpr size_t size = detail::type_list::size<self>::value;
 
+  static constexpr size_t alignment = detail::type_list::alignment<self>::value;
+  static constexpr size_t struct_byte_size =
+      detail::type_list::struct_byte_size<self>::value;
+  static constexpr size_t tuple_byte_size =
+      detail::type_list::tuple_byte_size<self>::value;
+
   template <size_t index>
-  requires(index < size)  //
-      static constexpr size_t offset =
-          detail::type_list::offset<self, index>::value;
+  requires(index <= size - 1)  //
+      static constexpr size_t struct_offset =
+          detail::type_list::struct_offset<self, index>::value;
+
+  template <size_t index>
+  requires(index <= size - 1)  //
+      static constexpr size_t tuple_offset =
+          detail::type_list::tuple_offset<self, index>::value;
+
+  template <size_t index>
+  requires(index <= size - 1)  //
+      static constexpr size_t struct_padding =
+          detail::type_list::struct_padding<self, index>::value;
 
   static constexpr bool empty = detail::type_list::empty<self>::value;
 
