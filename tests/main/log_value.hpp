@@ -50,7 +50,7 @@ struct log {
   log(size_t i) : id{i} {}
   virtual ~log() noexcept = default;
 
-  log(log&&)   = delete;
+  log(log&&) = delete;
   log& operator=(log&&) = delete;
 
   // Copy operations are not allowed.
@@ -59,8 +59,8 @@ struct log {
 
   // State
   mutable std::mutex access_mutex{};
-  struct state       state {};
-  size_t             id{};
+  struct state state {};
+  size_t id{};
 };
 
 inline void reset(struct log& log) {
@@ -73,13 +73,13 @@ inline bool operator==(const struct log::state& s1,
   return s1.counters == s2.counters;
 }
 
-inline bool operator==(const struct log&        log,
+inline bool operator==(const struct log& log,
                        const struct log::state& state) noexcept {
   std::scoped_lock lock{log.access_mutex};
   return log.state == state;
 }
 
-inline std::ostream& operator<<(std::ostream&            os,
+inline std::ostream& operator<<(std::ostream& os,
                                 const struct log::state& state) {
   using namespace std;
   os << '\n';
@@ -102,20 +102,28 @@ inline std::ostream& operator<<(std::ostream& os, const struct log& log) {
 
 template <typename T, size_t I>
 struct basic_log_value {
-  using type                     = T;
+  using type = T;
   static constexpr size_t log_id = I;
-  static struct log       log;
+  static struct log log;
 
   basic_log_value() {
     std::scoped_lock lock{log.access_mutex};
     ++log.state.counters[log.state.default_construct_calls];
   }
 
-  template <generic::forwardable<T> V>
-  basic_log_value(V&& d) : value{std::forward<V>(d)} {
+  // template <generic::forwardable<T> V>
+  // basic_log_value(V&& d) : value{std::forward<V>(d)} {
+  //   std::scoped_lock lock{log.access_mutex};
+  //   ++log.state.counters[log.state.construct_calls];
+  // }
+
+  template <typename... types>
+  requires std::constructible_from<type, types...>  //
+  basic_log_value(types&&... values) : value(std::forward<types>(values)...) {
     std::scoped_lock lock{log.access_mutex};
     ++log.state.counters[log.state.construct_calls];
   }
+
   virtual ~basic_log_value() noexcept {
     std::scoped_lock lock{log.access_mutex};
     ++log.state.counters[log.state.destruct_calls];
@@ -148,7 +156,7 @@ struct basic_log_value {
     ++log.state.counters[log.state.swap_calls];
   }
 
-  operator type() { return value; }
+  // operator type() { return value; }
 
   // State
   type value;

@@ -1,358 +1,335 @@
 #pragma once
 #include <lyrahgames/xstd/forward.hpp>
+#include <lyrahgames/xstd/type_list.hpp>
+#include <tuple>
 
 namespace lyrahgames::xstd {
 
+// The C++ standard does not specify a memory layout to be used for tuples.
+// For issues concerning the copy of memory, a custom tuple may be needed.
+// It should provide a contiguous access to the given types in the same order.
+//
+// The tuple should be trivial if every contained is trivial.
+
+template <typename... types>
+struct tuple;
+
+/// For tight constraints in template requirements,
+/// we want to be able to decide whether a type is
+/// an instance of the 'tuple' template.
 namespace detail {
+// The implementation of this idea is taken out inside the 'details'
+// namespace by a typical template struct predicate specialization.
+template <typename t>
+struct is_tuple : std::false_type {};
+template <typename... types>
+struct is_tuple<tuple<types...>> : std::true_type {};
+}  // namespace detail
 
-template <size_t N, typename T>
-struct tuple_element;
-
+/// To simplify the interface, we use templated variables as alias.
 template <typename T>
-struct tuple_element_instantiated : std::false_type {};
+constexpr bool is_tuple = detail::is_tuple<T>::value;
 
-template <size_t N, typename T>
-struct tuple_element_instantiated<tuple_element<N, T>> : std::true_type {};
-
+/// To simplify the usage as concept,
+/// we also provide a concept alias inside the 'instance' namespace.
+namespace instance {
 template <typename T>
-concept tuple_element_instantiation =
-    tuple_element_instantiated<std::decay_t<T>>::value;
+concept tuple = is_tuple<T>;
+}  // namespace instance
+
+namespace forwardable {
+template <typename T>
+concept tuple = instance::tuple<std::decay_t<T>>;
+}
+
+namespace detail::tuple {
 
 /// Used to implement the tuple structure.
 /// Types wrappes any given type so that tuple can use it as a base class.
 /// 'N' is used to allow elements with the same type
 /// to occur multiple times in tuple.
 template <size_t N, typename T>
-struct tuple_element {
-  /// Wrapped Type
+struct wrapper;
+
+template <typename type>
+struct is_wrapper : std::false_type {};
+template <size_t N, typename T>
+struct is_wrapper<wrapper<N, T>> : std::true_type {};
+
+namespace forwardable {
+template <typename T>
+concept wrapper = is_wrapper<std::decay_t<T>>::value;
+}
+
+template <size_t N, typename T>
+struct wrapper {
   using type = T;
-
-  /// Non-Constant Access to the Wrapped Value
-  constexpr decltype(auto) value() & { return static_cast<type&>(data); }
-
-  constexpr decltype(auto) value() && { return std::move(data); }
-
-  /// Constant Access to the Wrapped Value
-  constexpr decltype(auto) value() const& {
-    return static_cast<const type&>(data);
-  }
-
-  /// Default Constructor
-  constexpr tuple_element()                      //
-      requires std::default_initializable<type>  //
-  = default;
-
-  template <detail::tuple_element_instantiation V>
-  constexpr explicit tuple_element(V&& t) : data(std::forward<V>(t).value()) {}
-
-  template <detail::tuple_element_instantiation V>
-  constexpr tuple_element& operator=(V&& t) {
-    data = std::forward<V>(t).value();
-    return *this;
-  }
 
   /// Templatized Forward Constructor
-  template <generic::forward_constructible<type> V>
-  requires(!detail::tuple_element_instantiation<V>)  //
-      constexpr explicit tuple_element(V&& v)
-      : data(std::forward<V>(v)) {}
+  template <typename... types>
+  constexpr wrapper(types&&... values) noexcept(
+      noexcept(type(std::forward<types>(values)...)))  //
+      requires std::constructible_from<type, types...>
+      : _value(std::forward<types>(values)...) {}
 
-  /// Templatized Value Assignment
-  template <generic::forward_assignable<type> V>
-  requires(!detail::tuple_element_instantiation<V>)  //
-      constexpr tuple_element&
-      operator=(V&& v) {
-    data = std::forward<V>(v);
+  constexpr wrapper(forwardable::wrapper auto&& x)
+      : _value(std::forward<decltype(x)>(x).value()) {}
+  constexpr wrapper& operator=(forwardable::wrapper auto&& x) {
+    _value = std::forward<decltype(x)>(x).value();
     return *this;
   }
 
-  // /// Templatized Move Constructor
-  // template <size_t M, generic::move_constructible<type> U>
-  // constexpr tuple_element(tuple_element<M, U>&& t)
-  //     : data(std::move(t.value())) {}
+  constexpr decltype(auto) value() & noexcept {
+    return static_cast<type&>(_value);
+  }
+  constexpr decltype(auto) value() && noexcept {
+    return static_cast<type&&>(_value);
+  }
+  constexpr decltype(auto) value() const& noexcept {
+    return static_cast<const type&>(_value);
+  }
+  constexpr decltype(auto) value() const&& noexcept {
+    return static_cast<const type&&>(_value);
+  }
 
-  // /// Templatized Move Assignment
-  // template <size_t M, generic::move_assignable<type> U>
-  // constexpr tuple_element& operator=(tuple_element<M, U>&& t) {
-  //   data = std::move(t.value());
-  //   return *this;
-  // }
-
-  // /// Templatized Copy Constructor
-  // template <size_t M, generic::copy_constructible<type> U>
-  // constexpr tuple_element(const tuple_element<M, U>& t) : data(t.value()) {}
-
-  // /// Templatized Copy Assignment
-  // template <size_t M, generic::copy_assignable<type> U>
-  // constexpr tuple_element& operator=(const tuple_element<M, U>& t) {
-  //   data = t.value();
-  //   return *this;
-  // }
-
-  // /// Templatized Copy Constructor
-  // template <size_t M, generic::copy_constructible<type> U>
-  // constexpr tuple_element(tuple_element<M, U>& t) : data(t.value()) {}
-
-  // /// Templatized Copy Assignment
-  // template <size_t M, generic::copy_assignable<type> U>
-  // constexpr tuple_element& operator=(tuple_element<M, U>& t) {
-  //   data = t.value();
-  //   return *this;
-  // }
-
-  type data{};
+  type _value{};
 };
-
-/// Specialization for types that can be used as a direct parent.
+// Specialization for inheritable classes.
 template <size_t N, typename T>
-requires std::is_class_v<T> &&(!std::is_final_v<T>)  //
-    struct tuple_element<N, T> : T {
+requires(std::is_class_v<T> && (!std::is_final_v<T>))  //
+    struct wrapper<N, T> : T {
   using type = T;
-  using base = T;
+  using type::type;
 
-  /// Non-Constant Access to Inherited Type
-  constexpr decltype(auto) value() & { return static_cast<type&>(*this); }
+  constexpr wrapper(forwardable::wrapper auto&& x)
+      : type(std::forward<decltype(x)>(x).value()) {}
+  constexpr wrapper& operator=(forwardable::wrapper auto&& x) {
+    *this = std::forward<decltype(x)>(x).value();
+    return *this;
+  }
 
-  constexpr decltype(auto) value() && { return std::move(*this); }
-
-  /// Constant Access to Inherited Type
-  constexpr decltype(auto) value() const& {
+  constexpr decltype(auto) value() & noexcept {
+    return static_cast<type&>(*this);
+  }
+  constexpr decltype(auto) value() && noexcept {
+    return static_cast<type&&>(*this);
+  }
+  constexpr decltype(auto) value() const& noexcept {
     return static_cast<const type&>(*this);
   }
-
-  /// Default Constructor
-  constexpr tuple_element()                   //
-      requires std::default_initializable<T>  //
-  = default;
-
-  template <detail::tuple_element_instantiation V>
-  constexpr explicit tuple_element(V&& t) : base(std::forward<V>(t).value()) {}
-
-  template <detail::tuple_element_instantiation V>
-  constexpr tuple_element& operator=(V&& t) {
-    static_cast<base&>(*this) = std::forward<V>(t).value();
-    return *this;
+  constexpr decltype(auto) value() const&& noexcept {
+    return static_cast<const type&&>(*this);
   }
-
-  /// Templatized Forward Constructor
-  template <generic::forward_constructible<type> V>
-  requires(!detail::tuple_element_instantiation<V>)  //
-      constexpr tuple_element(V&& v)
-      : base(std::forward<V>(v)) {}
-
-  /// Templatized Forward Assignment
-  template <generic::forward_assignable<type> V>
-  requires(!detail::tuple_element_instantiation<V>)  //
-      constexpr tuple_element&
-      operator=(V&& v) {
-    static_cast<base&>(*this) = std::forward<V>(v);
-    return *this;
-  }
-
-  // /// Templatized Move Constructor
-  // template <size_t M, generic::move_constructible<type> U>
-  // constexpr tuple_element(tuple_element<M, U>&& t)
-  //     : base(std::move(t.value())) {}
-
-  // /// Templatized Move Assignment
-  // template <size_t M, generic::move_assignable<type> U>
-  // constexpr tuple_element& operator=(tuple_element<M, U>&& t) {
-  //   static_cast<base&>(*this) = std::move(t.value());
-  //   return *this;
-  // }
-
-  // /// Templatized Copy Constructor
-  // template <size_t M, generic::copy_constructible<type> U>
-  // constexpr tuple_element(const tuple_element<M, U>& t) : base(t.value()) {}
-
-  // /// Templatized Copy Assignment
-  // template <size_t M, generic::copy_assignable<type> U>
-  // constexpr tuple_element& operator=(const tuple_element<M, U>& t) {
-  //   static_cast<base&>(*this) = t.value();
-  //   return *this;
-  // }
-
-  // /// Templatized Copy Constructor
-  // template <size_t M, generic::copy_constructible<type> U>
-  // constexpr tuple_element(tuple_element<M, U>& t) : base(t.value()) {}
-
-  // /// Templatized Copy Assignment
-  // template <size_t M, generic::copy_assignable<type> U>
-  // constexpr tuple_element& operator=(tuple_element<M, U>& t) {
-  //   static_cast<base&>(*this) = t.value();
-  //   return *this;
-  // }
 };
 
-}  // namespace detail
+}  // namespace detail::tuple
 
-/// Custom Tuple Structure
-template <typename... T>
-struct tuple;
-
-namespace detail {
-
-/// Used to get the types of elements inside a tuple.
-template <typename tuple, size_t index>
-struct element {
-  using type = typename element<typename tuple::next, index - 1>::type;
-};
-
-/// Used to get the types of elements inside a tuple.
-/// Specialization for the head element.
-template <typename tuple>
-struct element<tuple, 0> {
-  using type = typename tuple::head::type;
-};
-
-}  // namespace detail
-
-/// Empty Tuple Specialization used as a Sentinel
+/// Empty Tuple Specialization
 template <>
 struct tuple<> {
+  using types = type_list<>;
   static constexpr size_t size() { return 0; }
 };
 
 /// Tuple Implementation
 /// Uses inheritance to make use of empty-base-class optimization.
 template <typename T, typename... U>
-struct tuple<T, U...> : detail::tuple_element<sizeof...(U), T>, tuple<U...> {
-  using base = tuple<U...>;
-  using next = base;
-  using head = detail::tuple_element<sizeof...(U), T>;
+struct tuple<T, U...> : detail::tuple::wrapper<sizeof...(U), T>, tuple<U...> {
+  using types = type_list<T, U...>;
+
+  template <size_t index>
+  using type = typename types::template element<index>;
 
   /// Returns the count of elements inside the tuple.
   static constexpr size_t size() { return 1 + sizeof...(U); }
 
-  constexpr decltype(auto) head_cast() & { return static_cast<head&>(*this); }
-  constexpr decltype(auto) head_cast() && { return static_cast<head&&>(*this); }
-  constexpr decltype(auto) head_cast() const& {
+  using head = detail::tuple::wrapper<sizeof...(U), T>;
+  using tail = tuple<U...>;
+
+  constexpr decltype(auto) head_cast() & noexcept {
+    return static_cast<head&>(*this);
+  }
+  constexpr decltype(auto) head_cast() && noexcept {
+    return static_cast<head&&>(*this);
+  }
+  constexpr decltype(auto) head_cast() const& noexcept {
     return static_cast<const head&>(*this);
   }
-
-  constexpr decltype(auto) next_cast() & { return static_cast<next&>(*this); }
-  constexpr decltype(auto) next_cast() && { return static_cast<next&&>(*this); }
-  constexpr decltype(auto) next_cast() const& {
-    return static_cast<const next&>(*this);
+  constexpr decltype(auto) head_cast() const&& noexcept {
+    return static_cast<const head&&>(*this);
   }
 
-  /// Meta member function to get the type of an element.
-  template <size_t N>
-  requires(N <= sizeof...(U))  //
-      using type = typename detail::element<tuple<T, U...>, N>::type;
+  constexpr decltype(auto) tail_cast() & noexcept {
+    return static_cast<tail&>(*this);
+  }
+  constexpr decltype(auto) tail_cast() && noexcept {
+    return static_cast<tail&&>(*this);
+  }
+  constexpr decltype(auto) tail_cast() const& noexcept {
+    return static_cast<const tail&>(*this);
+  }
+  constexpr decltype(auto) tail_cast() const&& noexcept {
+    return static_cast<const tail&&>(*this);
+  }
 
   /// Default Constructor
-  constexpr tuple()                              //
-      requires std::default_initializable<head>  //
-      && std::default_initializable<next>        //
+  constexpr tuple()                                                         //
+      requires                                                              //
+      std::default_initializable<head> && std::default_initializable<tail>  //
   = default;
 
   /// Templatized Forward Constructor
-  template <generic::forward_constructible<head> V, typename... W>
+  template <typename V, typename... W>
   constexpr tuple(V&& v, W&&... w)  //
       requires((sizeof...(W) == sizeof...(U)) &&
-               std::constructible_from<next, W...>)
-      : head(std::forward<V>(v)), next(std::forward<W>(w)...) {}
+               std::constructible_from<tail, W...> &&
+               std::constructible_from<head, V>)
+      : head(std::forward<V>(v)), tail(std::forward<W>(w)...) {}
 
-  template <generic::instantiation<tuple> V>
+  template <forwardable::tuple V>
   requires(size() == std::decay_t<V>::size())  //
       constexpr tuple(V&& x)
       : head(std::forward<V>(x).head_cast()),
-        next(std::forward<V>(x).next_cast()) {}
+        tail(std::forward<V>(x).tail_cast()) {}
 
-  template <generic::instantiation<tuple> V>
+  template <forwardable::tuple V>
   requires(size() == std::decay_t<V>::size())  //
       constexpr tuple&
       operator=(V&& x) {
     head_cast() = std::forward<V>(x).head_cast();
-    next_cast() = std::forward<V>(x).next_cast();
+    tail_cast() = std::forward<V>(x).tail_cast();
     return *this;
-  }
-
-  // /// Templatized Move Constructor
-  // template <typename V, typename... W>
-  // constexpr tuple(tuple<V, W...>&& x)  //
-  //     requires(sizeof...(W) == sizeof...(U))
-  //     : head(static_cast<typename tuple<V, W...>::head&&>(x)),
-  //       next(static_cast<typename tuple<V, W...>::next&&>(x)) {}
-
-  // /// Templatized Move Assignment
-  // template <typename V, typename... W>
-  // constexpr tuple& operator=(tuple<V, W...>&& x)  //
-  //     requires(sizeof...(W) == sizeof...(U)) {
-  //   static_cast<head&>(*this) = static_cast<typename tuple<V,
-  //   W...>::head&&>(x); static_cast<next&>(*this) = static_cast<typename
-  //   tuple<V, W...>::next&&>(x); return *this;
-  // }
-
-  // /// Templatized Copy Constructor
-  // template <typename V, typename... W>
-  // constexpr tuple(const tuple<V, W...>& x)  //
-  //     requires(sizeof...(W) == sizeof...(U))
-  //     : head(static_cast<const typename tuple<V, W...>::head&>(x)),
-  //       next(static_cast<const typename tuple<V, W...>::next&>(x)) {}
-
-  // /// Templatized Copy Assignment
-  // template <typename V, typename... W>
-  // constexpr tuple& operator=(const tuple<V, W...>& x)  //
-  //     requires(sizeof...(W) == sizeof...(U)) {
-  //   static_cast<head&>(*this) =
-  //       static_cast<const typename tuple<V, W...>::head&>(x);
-  //   static_cast<next&>(*this) =
-  //       static_cast<const typename tuple<V, W...>::next&>(x);
-  //   return *this;
-  // }
-
-  /// Constant Variant of Element Access
-  template <size_t index>
-  constexpr decltype(auto) element() const  //
-      requires(index == 0) {
-    return static_cast<const head&>(*this).value();
-  }
-
-  /// Constant Variant of Element Access
-  template <size_t index>
-  constexpr decltype(auto) element() const  //
-      requires((index != 0) && (index <= sizeof...(U))) {
-    return static_cast<const next&>(*this).template element<index - 1>();
-  }
-
-  /// Non-Constant Variant of Element Access
-  template <size_t index>
-  constexpr decltype(auto) element()  //
-      requires(index == 0) {
-    return static_cast<head&>(*this).value();
-  }
-
-  /// Non-Constant Variant of Element Access
-  template <size_t index>
-  constexpr decltype(auto) element()  //
-      requires((index != 0) && (index <= sizeof...(U))) {
-    return static_cast<next&>(*this).template element<index - 1>();
   }
 };
 
-/// Get access to the value of an element of a tuple.
-template <size_t index, typename tuple>
-constexpr decltype(auto) element(tuple&& t) {
-  return std::forward<tuple>(t).template element<index>();
-}
-
-namespace meta {
-
-/// Meta function for accessing the element type of a tuple.
-// template <typename tuple, size_t index>
-// using element = typename detail::element<tuple, index>::type;
-
-}  // namespace meta
-
-/// Provides support for using structured bindings with tuple.
-template <size_t index, typename tuple>
-constexpr decltype(auto) get(tuple&& t) {
-  return std::forward<tuple>(t).template element<index>();
+template <size_t index>
+constexpr decltype(auto) value(auto&& t) noexcept {
+  if constexpr (index == 0)
+    return std::forward<decltype(t)>(t).head_cast().value();
+  else
+    return value<index - 1>(std::forward<decltype(t)>(t).tail_cast());
 }
 
 }  // namespace lyrahgames::xstd
+
+// namespace lyrahgames::xstd {
+
+// namespace detail {
+
+// template <size_t N, typename T>
+// struct tuple_element;
+
+// template <typename T>
+// struct tuple_element_instantiated : std::false_type {};
+
+// template <size_t N, typename T>
+// struct tuple_element_instantiated<tuple_element<N, T>> : std::true_type {};
+
+// template <typename T>
+// concept tuple_element_instantiation =
+//     tuple_element_instantiated<std::decay_t<T>>::value;
+
+/// Used to implement the tuple structure.
+/// Types wrappes any given type so that tuple can use it as a base class.
+/// 'N' is used to allow elements with the same type
+/// to occur multiple times in tuple.
+// template <size_t N, typename T>
+// struct tuple_element {
+//   /// Wrapped Type
+//   using type = T;
+
+//   /// Non-Constant Access to the Wrapped Value
+//   constexpr decltype(auto) value() & { return static_cast<type&>(data); }
+
+//   constexpr decltype(auto) value() && { return std::move(data); }
+
+//   /// Constant Access to the Wrapped Value
+//   constexpr decltype(auto) value() const& {
+//     return static_cast<const type&>(data);
+//   }
+
+//   /// Default Constructor
+//   constexpr tuple_element()                      //
+//       requires std::default_initializable<type>  //
+//   = default;
+
+//   template <detail::tuple_element_instantiation V>
+//   constexpr explicit tuple_element(V&& t) : data(std::forward<V>(t).value())
+//   {}
+
+//   template <detail::tuple_element_instantiation V>
+//   constexpr tuple_element& operator=(V&& t) {
+//     data = std::forward<V>(t).value();
+//     return *this;
+//   }
+
+//   /// Templatized Forward Constructor
+//   template <generic::forward_constructible<type> V>
+//   requires(!detail::tuple_element_instantiation<V>)  //
+//       constexpr explicit tuple_element(V&& v)
+//       : data(std::forward<V>(v)) {}
+
+//   /// Templatized Value Assignment
+//   template <generic::forward_assignable<type> V>
+//   requires(!detail::tuple_element_instantiation<V>)  //
+//       constexpr tuple_element&
+//       operator=(V&& v) {
+//     data = std::forward<V>(v);
+//     return *this;
+//   }
+
+//   type data{};
+// };
+
+// /// Specialization for types that can be used as a direct parent.
+// template <size_t N, typename T>
+// requires std::is_class_v<T> &&(!std::is_final_v<T>)  //
+//     struct tuple_element<N, T> : T {
+//   using type = T;
+//   using base = T;
+
+//   /// Non-Constant Access to Inherited Type
+//   constexpr decltype(auto) value() & { return static_cast<type&>(*this); }
+
+//   constexpr decltype(auto) value() && { return std::move(*this); }
+
+//   /// Constant Access to Inherited Type
+//   constexpr decltype(auto) value() const& {
+//     return static_cast<const type&>(*this);
+//   }
+
+//   /// Default Constructor
+//   constexpr tuple_element()                   //
+//       requires std::default_initializable<T>  //
+//   = default;
+
+//   template <detail::tuple_element_instantiation V>
+//   constexpr explicit tuple_element(V&& t) : base(std::forward<V>(t).value())
+//   {}
+
+//   template <detail::tuple_element_instantiation V>
+//   constexpr tuple_element& operator=(V&& t) {
+//     static_cast<base&>(*this) = std::forward<V>(t).value();
+//     return *this;
+//   }
+
+//   /// Templatized Forward Constructor
+//   template <generic::forward_constructible<type> V>
+//   requires(!detail::tuple_element_instantiation<V>)  //
+//       constexpr tuple_element(V&& v)
+//       : base(std::forward<V>(v)) {}
+
+//   /// Templatized Forward Assignment
+//   template <generic::forward_assignable<type> V>
+//   requires(!detail::tuple_element_instantiation<V>)  //
+//       constexpr tuple_element&
+//       operator=(V&& v) {
+//     static_cast<base&>(*this) = std::forward<V>(v);
+//     return *this;
+//   }
+// };
+
+// }  // namespace detail
 
 namespace std {
 
