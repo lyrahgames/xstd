@@ -6,6 +6,7 @@
 //
 #include <doctest/doctest.h>
 //
+#include <lyrahgames/xstd/static.hpp>
 #include <lyrahgames/xstd/tuple.hpp>
 //
 #include "log_value.hpp"
@@ -150,6 +151,39 @@ SCENARIO("Tuple Properties") {
       >::for_each([]<typename type> {
     static_assert(sizeof(type) == type::types::tuple_byte_size);
     static_assert(alignof(type) == type::types::alignment);
+  });
+}
+
+SCENARIO("") {
+  using xstd::tuple;
+
+  type_list<          //
+      tuple<char>,    //
+      tuple<short>,   //
+      tuple<int>,     //
+      tuple<float>,   //
+      tuple<double>,  //
+      //
+      tuple<int, int>,   //
+      tuple<char, int>,  //
+      //
+      tuple<char, double, char, int>,  //
+      //
+      tuple<>  //
+      >::for_each([]<typename tuple_type> {
+    using types = typename tuple_type::types;
+    constexpr auto size = types::size;
+
+    static_assert(alignof(tuple_type) == types::alignment);
+    static_assert(sizeof(tuple_type) == types::struct_byte_size);
+
+    tuple_type data;
+    meta::value_list::iota<size>::for_each([&data]<auto i> {
+      const auto offset =
+          static_cast<size_t>(reinterpret_cast<uintptr_t>(&value<i>(data)) -
+                              reinterpret_cast<uintptr_t>(&data));
+      CHECK(offset == types::template struct_offset<i>);
+    });
   });
 }
 
