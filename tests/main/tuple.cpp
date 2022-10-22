@@ -17,6 +17,33 @@ using namespace xstd;
 namespace {
 
 struct nothing {};
+static_assert(sizeof(nothing) == 1);
+static_assert(alignof(nothing) == 1);
+static_assert(is_empty_v<nothing>);
+
+struct other_nothing {};
+
+struct contained_nothing {
+  nothing value;
+};
+static_assert(sizeof(contained_nothing) == 1);
+static_assert(alignof(contained_nothing) == 1);
+static_assert(!is_empty_v<contained_nothing>);
+
+struct child_nothing : nothing {};
+static_assert(sizeof(child_nothing) == 1);
+static_assert(alignof(child_nothing) == 1);
+static_assert(is_empty_v<child_nothing>);
+
+struct other_child_nothing : nothing {};
+
+struct multiple_child_nothing : child_nothing, other_child_nothing {};
+static_assert(sizeof(multiple_child_nothing) == 2);
+static_assert(alignof(multiple_child_nothing) == 1);
+static_assert(is_empty_v<multiple_child_nothing>);
+
+// static_assert(sizeof(std::tuple<nothing, nothing>) == 1);
+// static_assert(sizeof(xstd::tuple<nothing, nothing>) == 1);
 
 struct my_int {
   int value;
@@ -25,6 +52,19 @@ struct my_int {
 }  // namespace
 
 SCENARIO("Tuple Value Wrapper Properties") {
+  {
+    using type = int&;
+    using ref_type = std::reference_wrapper<int>;
+    using wrapped_type = detail::tuple::wrapper<0, type>;
+
+    static_assert(is_copy_assignable_v<type> == is_copy_assignable_v<ref_type>);
+    static_assert(is_trivially_copy_assignable_v<type> ==
+                  is_trivially_copy_assignable_v<ref_type>);
+    static_assert(is_nothrow_copy_assignable_v<type> ==
+                  is_nothrow_copy_assignable_v<ref_type>);
+  }
+
+  // constexpr detail::tuple::wrapper<0, int> x{};
   type_list<char, int, float, double, string, nothing, vector<int>,
             array<float, 10>>  //
       ::for_each([]<typename type> {
@@ -91,6 +131,63 @@ SCENARIO("Tuple Value Wrapper Properties") {
         // Layout Compatibility is a too strong requirement.
         // static_assert(is_layout_compatible_v<type, wrapped_type>);
       });
+}
+
+SCENARIO("Tuple Properties") {
+  using xstd::tuple;
+
+  type_list<                //
+      tuple<>,              //
+      tuple<nothing>,       //
+      tuple<char>,          //
+      tuple<int>,           //
+      tuple<float>,         //
+      tuple<int, nothing>,  //
+      tuple<nothing, int>,  //
+      tuple<int, int>,      //
+      // tuple<nothing, nothing>,  //
+      tuple<>  //
+      >::for_each([]<typename type> {
+    static_assert(sizeof(type) == type::types::tuple_byte_size);
+    static_assert(alignof(type) == type::types::alignment);
+  });
+}
+
+SCENARIO("Tuple Member Offset") {
+  using xstd::tuple;
+  using type = tuple<int, nothing, char, double, nothing>;
+  using types = type::types;
+
+  // static_assert(sizeof(type) == types::tuple_byte_size);
+  // static_assert(sizeof(std::tuple<int, nothing, char, double, nothing>) ==
+  //               types::tuple_byte_size);
+  // static_assert(alignof(type) == types::alignment);
+
+  // type x{};
+
+  // const auto offset0 =
+  //     static_cast<size_t>(reinterpret_cast<uintptr_t>(&value<0>(x)) -
+  //                         reinterpret_cast<uintptr_t>(&x));
+  // const auto offset1 =
+  //     static_cast<size_t>(reinterpret_cast<uintptr_t>(&value<1>(x)) -
+  //                         reinterpret_cast<uintptr_t>(&x));
+  // const auto offset2 =
+  //     static_cast<size_t>(reinterpret_cast<uintptr_t>(&value<2>(x)) -
+  //                         reinterpret_cast<uintptr_t>(&x));
+
+  // const auto offset3 =
+  //     static_cast<size_t>(reinterpret_cast<uintptr_t>(&value<3>(x)) -
+  //                         reinterpret_cast<uintptr_t>(&x));
+
+  // const auto offset4 =
+  //     static_cast<size_t>(reinterpret_cast<uintptr_t>(&value<4>(x)) -
+  //                         reinterpret_cast<uintptr_t>(&x));
+
+  // CHECK(offset0 == types::template tuple_offset<0>);
+  // CHECK(offset1 == types::template tuple_offset<1>);
+  // CHECK(offset2 == types::template tuple_offset<2>);
+  // CHECK(offset3 == types::template tuple_offset<3>);
+  // CHECK(offset4 == types::template tuple_offset<4>);
 }
 
 SCENARIO("") {
@@ -288,12 +385,12 @@ SCENARIO("") {
         CHECK(c.value == string("test"));
       }
 
-      // z = w;
+      z = w;
 
-      // log_int_state.counters[log_int_state.copy_assign_calls] += 2;
-      // CHECK(log_int::log == log_int_state);
-      // log_string_state.counters[log_string_state.copy_assign_calls] += 1;
-      // CHECK(log_string::log == log_string_state);
+      log_int_state.counters[log_int_state.copy_assign_calls] += 2;
+      CHECK(log_int::log == log_int_state);
+      log_string_state.counters[log_string_state.copy_assign_calls] += 1;
+      CHECK(log_string::log == log_string_state);
 
       // {
       //   const auto& [a, b, c] = z;
@@ -302,13 +399,13 @@ SCENARIO("") {
       //   CHECK(c.value == string("test"));
       // }
 
-      //       z = std::move(w);
+      // z = std::move(w);
 
       //       log_int_state.counters[log_int_state.move_assign_calls] += 1;
       //       log_int_state.counters[log_int_state.copy_assign_calls] += 1;
       //       CHECK(log_int::log == log_int_state);
-      //       log_string_state.counters[log_string_state.move_assign_calls] +=
-      //       1; CHECK(log_string::log == log_string_state);
+      //       log_string_state.counters[log_string_state.move_assign_calls]
+      //       += 1; CHECK(log_string::log == log_string_state);
 
       //       {
       //         const auto& [a, b, c] = z;

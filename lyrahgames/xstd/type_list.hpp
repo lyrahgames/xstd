@@ -363,9 +363,11 @@ template <instance::type_list list>
 struct tuple_byte_size {
   using type = typename back<list>::type;
   static constexpr size_t byte_size = std::is_empty_v<type> ? 0 : sizeof(type);
-  static constexpr size_t value = aligned_offset(
-      tuple_offset<list, size<list>::value - 1>::value + byte_size,
-      alignment<list>::value);
+  static constexpr size_t value =
+      std::max(size_t{1},
+               aligned_offset(
+                   tuple_offset<list, size<list>::value - 1>::value + byte_size,
+                   alignment<list>::value));
 };
 template <>
 struct tuple_byte_size<type_list<>> {

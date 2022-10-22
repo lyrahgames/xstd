@@ -42,7 +42,24 @@ template <typename T>
 concept tuple = instance::tuple<std::decay_t<T>>;
 }
 
+/// Access the elements of a tuple by their index.
+///
+template <size_t index>
+constexpr decltype(auto) value(forwardable::tuple auto&& t) noexcept {
+  if constexpr (index == 0)
+    return std::forward<decltype(t)>(t).data().data();
+  else
+    return value<index - 1>(std::forward<decltype(t)>(t).next());
+}
+
 namespace detail::tuple {
+
+// "Empty base optimization is prohibited if one of the empty base classes is
+// also the type or the base of the type of the first non-static data member,
+// since the two base subobjects of the same type are required to have different
+// addresses within the object representation of the most derived type."
+// [cppreference.com: Empty Base Optimization]
+// https://en.cppreference.com/w/cpp/language/ebo
 
 /// Used to implement the tuple structure.
 /// Types wrappes any given type so that tuple can use it as a base class.
@@ -63,77 +80,112 @@ concept wrapper = is_wrapper<std::decay_t<T>>::value;
 
 template <size_t N, typename T>
 struct wrapper {
-  using type = T;
+  using data_type = T;
 
-  ///
-  constexpr wrapper() noexcept(
-      noexcept(std::is_nothrow_default_constructible_v<type>)) = default;
+  // The default functions of the compiler
+  // will automatically have the best properties.
+  // We still explicitly define them to make sure they exist.
+  wrapper() = default;
+  wrapper(const wrapper&) = default;
+  wrapper(wrapper&&) = default;
+  wrapper& operator=(const wrapper&) = default;
+  wrapper& operator=(wrapper&&) = default;
 
-  /// Templatized Forward Constructor
-  template <typename... types>
-  constexpr wrapper(types&&... values) noexcept(
-      noexcept(std::is_nothrow_constructible_v<type, types...>))  //
-      requires std::constructible_from<type, types...>
-      : _value(std::forward<types>(values)...) {}
+  /// Forward Constructor
+  template <typename type>
+  explicit constexpr wrapper(type&& value) noexcept(
+      noexcept(data_type(std::forward<type>(value))))
+      : _data(std::forward<type>(value)) {}
 
-  constexpr wrapper(forwardable::wrapper auto&& x)
-      : _value(std::forward<decltype(x)>(x).value()) {}
-  constexpr wrapper& operator=(forwardable::wrapper auto&& x) {
-    _value = std::forward<decltype(x)>(x).value();
+  // Generic Forward Constructor for Similar Wrapper Types
+  explicit constexpr wrapper(forwardable::wrapper auto&& x) noexcept(
+      noexcept(data_type(std::forward<decltype(x)>(x).data())))
+      : _data(std::forward<decltype(x)>(x).data()) {}
+
+  // Generic Assignment of Similar Wrapper Types
+  constexpr wrapper& operator=(forwardable::wrapper auto&& x) noexcept(
+      noexcept(_data = std::forward<decltype(x)>(x).data())) {
+    _data = std::forward<decltype(x)>(x).data();
     return *this;
   }
 
-  constexpr decltype(auto) value() & noexcept {
-    return static_cast<type&>(_value);
+  // Accessing the member will discard the qualifiers.
+  // So, we need these accessor functions.
+  // Additionally, they provide a uniform interface
+  // for different wrapper specializations.
+  constexpr decltype(auto) data() & noexcept {
+    return static_cast<data_type&>(_data);
   }
-  constexpr decltype(auto) value() && noexcept {
-    return static_cast<type&&>(_value);
+  constexpr decltype(auto) data() && noexcept {
+    return static_cast<data_type&&>(_data);
   }
-  constexpr decltype(auto) value() const& noexcept {
-    return static_cast<const type&>(_value);
+  constexpr decltype(auto) data() const& noexcept {
+    return static_cast<const data_type&>(_data);
   }
-  constexpr decltype(auto) value() const&& noexcept {
-    return static_cast<const type&&>(_value);
+  constexpr decltype(auto) data() const&& noexcept {
+    return static_cast<const data_type&&>(_data);
   }
 
-  // This seems to be better, but forces the type to be not trivial.
+  // The alternative
+  //
+  // data_type _data{};
+  //
+  // seems to be better, but forces
+  // the data_type to be non-trivial.
   // So for now, explicit default initialization
   // of the wrapped value will not be used.
   //
-  // type _value{};
-  //
-  type _value;
+  data_type _data;
 };
 
 // Specialization for inheritable classes.
+// This will enable empty base class optimization.
 template <size_t N, typename T>
 requires(std::is_class_v<T> && (!std::is_final_v<T>))  //
     struct wrapper<N, T> : T {
-  using type = T;
-  using type::type;
+  using data_type = T;
+  using data_type::data_type;
 
-  ///
-  constexpr wrapper() noexcept(
-      noexcept(std::is_nothrow_default_constructible_v<type>)) = default;
+  // The default functions of the compiler
+  // will automatically have the best properties.
+  // We still explicitly define them to make sure they exist.
+  //
+  wrapper() = default;
+  wrapper(const wrapper&) = default;
+  wrapper(wrapper&&) = default;
+  wrapper& operator=(const wrapper&) = default;
+  wrapper& operator=(wrapper&&) = default;
 
-  constexpr wrapper(forwardable::wrapper auto&& x)
-      : type(std::forward<decltype(x)>(x).value()) {}
-  constexpr wrapper& operator=(forwardable::wrapper auto&& x) {
-    *this = std::forward<decltype(x)>(x).value();
+  // Generic Forward Constructor for Similar Wrapper Types
+  //
+  explicit constexpr wrapper(forwardable::wrapper auto&& x) noexcept(
+      noexcept(data_type(std::forward<decltype(x)>(x).data())))
+      : data_type(std::forward<decltype(x)>(x).data()) {}
+
+  // Generic Assignment of Similar Wrapper Types
+  //
+  constexpr wrapper& operator=(forwardable::wrapper auto&& x) noexcept(noexcept(
+      static_cast<data_type&>(*this) = std::forward<decltype(x)>(x).data())) {
+    static_cast<data_type&>(*this) = std::forward<decltype(x)>(x).data();
     return *this;
   }
 
-  constexpr decltype(auto) value() & noexcept {
-    return static_cast<type&>(*this);
+  // Accessing the member will discard the qualifiers.
+  // So, we need these accessor functions.
+  // Additionally, they provide a uniform interface
+  // for different wrapper specializations.
+  //
+  constexpr decltype(auto) data() & noexcept {
+    return static_cast<data_type&>(*this);
   }
-  constexpr decltype(auto) value() && noexcept {
-    return static_cast<type&&>(*this);
+  constexpr decltype(auto) data() && noexcept {
+    return static_cast<data_type&&>(*this);
   }
-  constexpr decltype(auto) value() const& noexcept {
-    return static_cast<const type&>(*this);
+  constexpr decltype(auto) data() const& noexcept {
+    return static_cast<const data_type&>(*this);
   }
-  constexpr decltype(auto) value() const&& noexcept {
-    return static_cast<const type&&>(*this);
+  constexpr decltype(auto) data() const&& noexcept {
+    return static_cast<const data_type&&>(*this);
   }
 };
 
@@ -158,100 +210,92 @@ struct tuple<T, U...> : detail::tuple::wrapper<sizeof...(U), T>, tuple<U...> {
   /// Returns the count of elements inside the tuple.
   static constexpr size_t size() { return 1 + sizeof...(U); }
 
-  using head = detail::tuple::wrapper<sizeof...(U), T>;
-  using tail = tuple<U...>;
+  using data_type = detail::tuple::wrapper<sizeof...(U), T>;
+  using next_type = tuple<U...>;
 
-  constexpr decltype(auto) head_cast() & noexcept {
-    return static_cast<head&>(*this);
+  constexpr decltype(auto) data() & noexcept {
+    return static_cast<data_type&>(*this);
   }
-  constexpr decltype(auto) head_cast() && noexcept {
-    return static_cast<head&&>(*this);
+  constexpr decltype(auto) data() && noexcept {
+    return static_cast<data_type&&>(*this);
   }
-  constexpr decltype(auto) head_cast() const& noexcept {
-    return static_cast<const head&>(*this);
+  constexpr decltype(auto) data() const& noexcept {
+    return static_cast<const data_type&>(*this);
   }
-  constexpr decltype(auto) head_cast() const&& noexcept {
-    return static_cast<const head&&>(*this);
-  }
-
-  constexpr decltype(auto) tail_cast() & noexcept {
-    return static_cast<tail&>(*this);
-  }
-  constexpr decltype(auto) tail_cast() && noexcept {
-    return static_cast<tail&&>(*this);
-  }
-  constexpr decltype(auto) tail_cast() const& noexcept {
-    return static_cast<const tail&>(*this);
-  }
-  constexpr decltype(auto) tail_cast() const&& noexcept {
-    return static_cast<const tail&&>(*this);
+  constexpr decltype(auto) data() const&& noexcept {
+    return static_cast<const data_type&&>(*this);
   }
 
-  /// Default Constructor
-  // constexpr tuple() noexcept(
-  //     noexcept(std::is_nothrow_default_constructible_v<head>&&
-  //                  std::is_nothrow_default_constructible_v<tail>)) //
-  //     requires // std::default_initializable<head> &&
-  //     std::default_initializable<tail>  //
-  // = default;
-  constexpr tuple() noexcept = default;
+  constexpr decltype(auto) next() & noexcept {
+    return static_cast<next_type&>(*this);
+  }
+  constexpr decltype(auto) next() && noexcept {
+    return static_cast<next_type&&>(*this);
+  }
+  constexpr decltype(auto) next() const& noexcept {
+    return static_cast<const next_type&>(*this);
+  }
+  constexpr decltype(auto) next() const&& noexcept {
+    return static_cast<const next_type&&>(*this);
+  }
 
-  /// Templatized Forward Constructor
-  template <typename V, typename... W>
-  constexpr tuple(V&& v, W&&... w)  //
-      requires((sizeof...(W) == sizeof...(U)) &&
-               std::constructible_from<tail, W...> &&
-               std::constructible_from<head, V>)
-      : head(std::forward<V>(v)), tail(std::forward<W>(w)...) {}
+  tuple() = default;
+  ~tuple() = default;
+  tuple(const tuple&) = default;
+  tuple& operator=(const tuple&) = default;
+  tuple(tuple&&) = default;
+  tuple& operator=(tuple&&) = default;
 
-  template <forwardable::tuple V>
-  requires(size() == std::decay_t<V>::size())  //
-      constexpr tuple(V&& x)
-      : head(std::forward<V>(x).head_cast()),
-        tail(std::forward<V>(x).tail_cast()) {}
+  // Templatized Forward Constructor
+  //
+  template <typename data_init, typename... next_init>
+  explicit constexpr tuple(data_init&& d, next_init&&... n) noexcept(
+      noexcept(data_type(std::forward<data_init>(d))) &&  //
+      noexcept(next_type(std::forward<next_init>(n)...)))
+      : data_type(std::forward<data_init>(d)),
+        next_type(std::forward<next_init>(n)...) {}
 
-  template <forwardable::tuple V>
-  requires(size() == std::decay_t<V>::size())  //
-      constexpr tuple&
-      operator=(V&& x) {
-    head_cast() = std::forward<V>(x).head_cast();
-    tail_cast() = std::forward<V>(x).tail_cast();
+  // Generic Copy/Move Construction
+  //
+  constexpr tuple(forwardable::tuple auto&& x) noexcept(
+      noexcept(data_type(std::forward<decltype(x)>(x).data())) &&  //
+      noexcept(next_type(std::forward<decltype(x)>(x).next())))
+      : data_type(std::forward<decltype(x)>(x).data()),
+        next_type(std::forward<decltype(x)>(x).next()) {}
+
+  // Generic Assignment Operator
+  //
+  constexpr tuple& operator=(forwardable::tuple auto&& x) noexcept(
+      noexcept(data() = std::forward<decltype(x)>(x).data()) &&  //
+      noexcept(next() = std::forward<decltype(x)>(x).next())) {
+    data() = std::forward<decltype(x)>(x).data();
+    next() = std::forward<decltype(x)>(x).next();
     return *this;
   }
 };
 
-/// Access the elements of a tuple by their index.
-template <size_t index>
-constexpr decltype(auto) value(forwardable::tuple auto&& t) noexcept {
-  if constexpr (index == 0)
-    return std::forward<decltype(t)>(t).head_cast().value();
-  else
-    return value<index - 1>(std::forward<decltype(t)>(t).tail_cast());
-}
-
-}  // namespace lyrahgames::xstd
-
-/// Support for Structured Bindings
-//
-namespace lyrahgames::xstd {
 /// This function is needed to make structured bindings available.
 /// Here, it is a simple wrapper function template for 'value'.
 template <size_t index>
-constexpr decltype(auto) get(auto&& t) noexcept {
+constexpr decltype(auto) get(forwardable::tuple auto&& t) noexcept {
   return value<index>(std::forward<decltype(t)>(t));
 }
+
 }  // namespace lyrahgames::xstd
-//
+
 namespace std {
+
 /// Provides support for using structured bindings with tuple.
 template <typename... T>
 struct tuple_size<lyrahgames::xstd::tuple<T...>> {
   static constexpr size_t value = lyrahgames::xstd::tuple<T...>::size();
 };
+
 /// Provides support for using structured bindings with tuple.
 template <size_t N, typename... T>  //
 requires(N < sizeof...(T))          //
     struct tuple_element<N, lyrahgames::xstd::tuple<T...>> {
   using type = typename lyrahgames::xstd::tuple<T...>::template type<N>;
 };
+
 }  // namespace std
