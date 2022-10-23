@@ -1,4 +1,4 @@
-lib{lyrahgames-xstd}: hxx{** -version} hxx{version}
+lib{lyrahgames-xstd}: {hxx ixx txx}{** -version} hxx{version}
 {
   cxx.export.poptions = "-I$out_root" "-I$src_root"
 }
@@ -9,7 +9,7 @@ hxx{version}: in{version} $src_root/manifest
   clean = ($src_root != $out_root)
 }
 
-hxx{*}:
+{hxx ixx txx}{*}:
 {
   install = include/lyrahgames/xstd/
   install.subdirs = true
