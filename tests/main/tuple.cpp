@@ -52,6 +52,17 @@ struct my_int {
 
 }  // namespace
 
+static_assert(!generic::tuple<int>);
+static_assert(!generic::tuple<type_list<char, float>>);
+static_assert(!generic::tuple<value_list<1, 'c'>>);
+static_assert(!generic::tuple<std::vector<int>>);
+static_assert(!generic::tuple<std::string>);
+//
+static_assert(generic::tuple<std::array<int, 10>>);
+static_assert(generic::tuple<std::pair<int, int>>);
+static_assert(generic::tuple<std::tuple<>>);
+static_assert(generic::tuple<xstd::tuple<char, float>>);
+
 SCENARIO("Tuple Value Wrapper Properties") {
   {
     using type = int&;

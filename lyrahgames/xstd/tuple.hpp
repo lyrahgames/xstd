@@ -1,13 +1,38 @@
 #pragma once
 #include <lyrahgames/xstd/forward.hpp>
 #include <lyrahgames/xstd/type_list.hpp>
+#include <lyrahgames/xstd/value_list.hpp>
 #include <tuple>
 
 namespace lyrahgames::xstd {
 
+namespace generic {
+
+template <typename tuple_type, size_t index>
+concept tuple_value_access = requires(tuple_type value) {
+  {
+    get<index>(value)
+    } -> std::convertible_to<  //
+        typename std::tuple_element<index, tuple_type>::type>;
+};
+
+/// Checks whether a given type fulfills the requirements of a generic tuple.
+///
+using namespace meta::value_list;
+template <typename tuple_type>
+concept tuple =  // Require applied check to be valid for all types.
+    logic_and < transform <
+    // Generate indices to get all types.
+    iota<std::tuple_size<tuple_type>::value>,
+// Check each tuple identifier for consistent access.
+[]<size_t x>() { return tuple_value_access<tuple_type, x>; } >> ;
+
+}  // namespace generic
+
 // The C++ standard does not specify a memory layout to be used for tuples.
 // For issues concerning the copy of memory, a custom tuple may be needed.
-// It should provide a contiguous access to the given types in the same order.
+// It should provide a contiguous access to the given types in the same
+// order.
 //
 // The tuple should be trivial if every contained is trivial.
 

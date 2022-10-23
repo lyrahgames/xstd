@@ -41,13 +41,40 @@ template <typename list, template <auto> typename constraint>
 constexpr bool is_constrained_value_list =
     detail::is_constrained_value_list<list, constraint>::value;
 
+//
+namespace detail {
+template <typename list, typename type>
+struct is_uniform_value_list : std::false_type {};
+template <typename type, type... values>
+struct is_uniform_value_list<value_list<values...>, type> : std::true_type {};
+}  // namespace detail
+
+/// Checks, whether the given type is a value list
+/// consisting only of values of a specific type.
+///
+template <typename list, typename type>
+constexpr bool is_uniform_value_list =
+    detail::is_uniform_value_list<list, type>::value;
+
 /// To simplify the usage as concept,
 /// we also provide a concept alias inside the 'instance' namespace.
 namespace instance {
+
 template <typename T>
 concept value_list = is_value_list<T>;
+
 template <typename T, template <auto> typename constraint>
 concept constrained_value_list = is_constrained_value_list<T, constraint>;
+
+template <typename list, typename type>
+concept uniform_value_list = is_uniform_value_list<list, type>;
+
+template <typename list>
+concept index_list = uniform_value_list<list, size_t>;
+
+template <typename list>
+concept bool_list = uniform_value_list<list, bool>;
+
 }  // namespace instance
 
 /// Helper/Non-Member Type Functions for Value Lists
@@ -175,13 +202,17 @@ requires(i < size<list>) && (j < size<list>)  //
     using swap = typename list::template swap<i, j>;
 
 /// Transform algorithm for a value list
-/// which transforms every contained type according to a given predicate.
-// We only provide this interface style
-// because there is no technique in C++
-// to provide variadic template predicates
-// in a lambda expression style.
-// template <instance::value_list list, template <auto> typename f>
-// using transformation = typename list::template transformation<f>;
+/// which transforms every contained value according to
+/// a given unary constexpr function or lambda expression.
+///
+template <instance::value_list list, auto function>
+using transform = typename list::template transform<function>;
+
+/// Reduces the whole value list to a value
+/// according to function and the initial value.
+///
+template <instance::value_list list, auto function, auto init>
+constexpr auto reduce = list::template reduce<function, init>;
 
 /// Generate code based on given lambda expression for each contained value.
 template <instance::value_list list>
@@ -189,11 +220,28 @@ constexpr void for_each(auto&& f) {
   list::for_each(std::forward<decltype(f)>(f));
 }
 
+/// Statically run a for loop until the result
+/// of the function evaluation becomes 'true'.
+/// The function returns 'false' if no evaluation returned 'true'.
 ///
 template <instance::value_list list>
 constexpr bool for_each_until(auto&& f) {
   return list::for_each_until(std::forward<decltype(f)>(f));
 }
+
+/// Reduce the value list containing only of bools
+/// by applying a logical 'and' operation.
+///
+template <instance::bool_list list>
+constexpr auto logic_and =
+    reduce<list, []<bool x, bool y> { return x && y; }, true>;
+
+/// Reduce the value list containing only of bools
+/// by applying a logical 'or' operation.
+///
+template <instance::bool_list list>
+constexpr auto logic_or =
+    reduce<list, []<bool x, bool y> { return x || y; }, false>;
 
 }  // namespace meta::value_list
 
@@ -550,12 +598,25 @@ requires(index < list::size)  //
 // };
 
 //
-// template <instance::value_list list, template <typename> typename f>
-// struct transformation;
-// template <template <auto> typename f, auto... values>
-// struct transformation<value_list<values...>, f> {
-//   using type = value_list<f<values>::value...>;
-// };
+template <instance::value_list list, auto function>
+struct transform;
+template <auto function, auto... values>
+struct transform<value_list<values...>, function> {
+  using type = value_list<function.template operator()<values>()...>;
+};
+
+//
+template <instance::value_list list, auto function, auto init>
+struct reduce {
+  static constexpr auto value =
+      function.template
+      operator()<reduce<typename list::pop_back, function, init>::value,
+                 list::back>();
+};
+template <auto function, auto init>
+struct reduce<value_list<>, function, init> {
+  static constexpr auto value = init;
+};
 
 template <instance::value_list list>
 constexpr bool for_each_until(auto&& f) {
@@ -643,9 +704,13 @@ struct base {
   // using insert_when =
   //     typename detail::value_list::insert_when<self, type, condition>::type;
 
-  // template <template <auto> typename f>
-  // using transformation =
-  //     typename detail::value_list::transformation<self, f>::type;
+  template <auto function>
+  using transform =
+      typename detail::value_list::transform<self, function>::type;
+
+  template <auto function, auto init>
+  static constexpr auto reduce =
+      detail::value_list::reduce<self, function, init>::value;
 
   static constexpr auto for_each(auto&& f) {
     (f.template operator()<values>(), ...);
