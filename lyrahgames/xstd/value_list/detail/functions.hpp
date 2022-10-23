@@ -1,3 +1,9 @@
+#pragma once
+#include <lyrahgames/xstd/type_list/meta.hpp>
+#include <lyrahgames/xstd/value_list/common.hpp>
+
+namespace lyrahgames::xstd {
+
 /// Forward declarations for type function details.
 // This is needed for member type functions.
 // Also, for every using declaration providing a non-member type function,
@@ -384,3 +390,5 @@ constexpr bool for_each_until(auto&& f) {
 }
 
 }  // namespace detail::value_list
+
+}  // namespace lyrahgames::xstd

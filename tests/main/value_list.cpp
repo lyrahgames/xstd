@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
 //
 #include <lyrahgames/xstd/static.hpp>
-#include <lyrahgames/xstd/value_list.hpp>
+#include <lyrahgames/xstd/value_list/value_list.hpp>
 
 using namespace lyrahgames::xstd;
 using namespace meta::value_list;

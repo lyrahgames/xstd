@@ -1,3 +1,8 @@
+#pragma once
+#include <lyrahgames/xstd/value_list/detail/functions.hpp>
+
+namespace lyrahgames::xstd {
+
 namespace detail::value_list {
 
 template <auto... values>
@@ -116,3 +121,5 @@ struct value_list<V, values...> : detail::value_list::base<V, values...> {
   using pop_front = typename detail::value_list::pop_front<self>::type;
   using pop_back = typename detail::value_list::pop_back<self>::type;
 };
+
+}  // namespace lyrahgames::xstd

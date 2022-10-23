@@ -1,3 +1,7 @@
+#include <lyrahgames/xstd/type_list/detail/functions.hpp>
+
+namespace lyrahgames::xstd {
+
 namespace detail::type_list {
 
 template <typename... types>
@@ -122,3 +126,5 @@ struct type_list<T, types...> : detail::type_list::base<T, types...> {
   using pop_front = typename detail::type_list::pop_front<self>::type;
   using pop_back = typename detail::type_list::pop_back<self>::type;
 };
+
+}  // namespace lyrahgames::xstd
