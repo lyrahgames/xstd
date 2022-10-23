@@ -4,8 +4,21 @@
 #include <lyrahgames/xstd/value_list.hpp>
 #include <tuple>
 
+// The C++ standard does not specify a memory layout to be used for tuples.
+// For issues concerning the copy of memory, a custom tuple may be needed.
+// It should provide a contiguous access to the given types in the same
+// order.
+//
+// The tuple should be trivial if every type contained is trivial.
+
 namespace lyrahgames::xstd {
 
+// Multiple tuple structures may exist due to several reasons.
+// All of them may be very important in different circumstances.
+// Hence, a concept for generic tuples may be useful.
+// Here, the requirements for structured bindings
+// are used as a generalization mechanism.
+//
 namespace generic {
 
 template <typename tuple_type, size_t index>
@@ -29,22 +42,55 @@ concept tuple =  // Require applied check to be valid for all types.
 
 }  // namespace generic
 
-// The C++ standard does not specify a memory layout to be used for tuples.
-// For issues concerning the copy of memory, a custom tuple may be needed.
-// It should provide a contiguous access to the given types in the same
-// order.
-//
-// The tuple should be trivial if every contained is trivial.
+/// Helper Function for Generic Tuple Cast
+///
+template <generic::tuple tuple_type, size_t... indices>
+constexpr auto tuple_cast(generic::tuple auto&& t,
+                          value_list<indices...>) noexcept(  //
+    noexcept(tuple_type{get<indices>(std::forward<decltype(t)>(t))...})) {
+  // This implementation requires a templatized forward constructor.
+  return tuple_type{get<indices>(std::forward<decltype(t)>(t))...};
+}
 
+/// Generic Tuple Cast
+/// Copies one generic tuple type to another.
+///
+template <generic::tuple tuple_type>
+constexpr auto tuple_cast(generic::tuple auto&& t) noexcept(  //
+    noexcept(tuple_cast<tuple_type>(
+        std::forward<decltype(t)>(t),
+        meta::value_list::iota<
+            std::tuple_size<std::decay_t<decltype(t)>>::value>{}))) {
+  using namespace meta::value_list;
+  constexpr auto size = std::tuple_size<std::decay_t<decltype(t)>>::value;
+  return tuple_cast<tuple_type>(std::forward<decltype(t)>(t), iota<size>{});
+}
+
+/// The actual custom tuple structure.
+/// Types are stored in the same order as they are given.
+/// This includes alignment and padding as it would be done in structs.
+/// Due to inheritance and EBCO, empty classes should not
+/// take up any space when used only once.
+///
+/// "Empty base optimization is prohibited if one of the empty base classes is
+/// also the type or the base of the type of the first non-static data member,
+/// since the two base subobjects of the same type are required to have
+/// different addresses within the object representation of the most derived
+/// type." [cppreference.com: Empty Base Optimization]
+/// https://en.cppreference.com/w/cpp/language/ebo
+///
+///
 template <typename... types>
 struct tuple;
 
 /// For tight constraints in template requirements,
 /// we want to be able to decide whether a type is
 /// an instance of the 'tuple' template.
+///
 namespace detail {
 // The implementation of this idea is taken out inside the 'details'
 // namespace by a typical template struct predicate specialization.
+//
 template <typename t>
 struct is_tuple : std::false_type {};
 template <typename... types>
@@ -52,11 +98,13 @@ struct is_tuple<tuple<types...>> : std::true_type {};
 }  // namespace detail
 
 /// To simplify the interface, we use templated variables as alias.
+///
 template <typename T>
 constexpr bool is_tuple = detail::is_tuple<T>::value;
 
 /// To simplify the usage as concept,
 /// we also provide a concept alias inside the 'instance' namespace.
+///
 namespace instance {
 template <typename T>
 concept tuple = is_tuple<T>;
@@ -78,13 +126,6 @@ constexpr decltype(auto) value(forwardable::tuple auto&& t) noexcept {
 }
 
 namespace detail::tuple {
-
-// "Empty base optimization is prohibited if one of the empty base classes is
-// also the type or the base of the type of the first non-static data member,
-// since the two base subobjects of the same type are required to have different
-// addresses within the object representation of the most derived type."
-// [cppreference.com: Empty Base Optimization]
-// https://en.cppreference.com/w/cpp/language/ebo
 
 /// Used to implement the tuple structure.
 /// Types wrappes any given type so that tuple can use it as a base class.
@@ -299,8 +340,35 @@ struct tuple<T, U...> : detail::tuple::wrapper<sizeof...(U), T>, tuple<U...> {
   }
 };
 
+/// Deduction Guides
+///
+template <typename... types>
+tuple(types...) -> tuple<types...>;
+
+///
+///
+template <size_t... indices>
+constexpr auto auto_tuple(generic::tuple auto&& t,
+                          value_list<indices...>) noexcept(  //
+    noexcept(tuple{get<indices>(std::forward<decltype(t)>(t))...})) {
+  return tuple{get<indices>(std::forward<decltype(t)>(t))...};
+}
+
+///
+///
+constexpr auto auto_tuple(generic::tuple auto&& t) noexcept(  //
+    noexcept(
+        auto_tuple(std::forward<decltype(t)>(t),
+                   meta::value_list::iota<
+                       std::tuple_size<std::decay_t<decltype(t)>>::value>{}))) {
+  using namespace meta::value_list;
+  constexpr auto size = std::tuple_size<std::decay_t<decltype(t)>>::value;
+  return auto_tuple(std::forward<decltype(t)>(t), iota<size>{});
+}
+
 /// This function is needed to make structured bindings available.
 /// Here, it is a simple wrapper function template for 'value'.
+///
 template <size_t index>
 constexpr decltype(auto) get(forwardable::tuple auto&& t) noexcept {
   return value<index>(std::forward<decltype(t)>(t));
@@ -311,12 +379,14 @@ constexpr decltype(auto) get(forwardable::tuple auto&& t) noexcept {
 namespace std {
 
 /// Provides support for using structured bindings with tuple.
+///
 template <typename... T>
 struct tuple_size<lyrahgames::xstd::tuple<T...>> {
   static constexpr size_t value = lyrahgames::xstd::tuple<T...>::size();
 };
 
 /// Provides support for using structured bindings with tuple.
+///
 template <size_t N, typename... T>  //
 requires(N < sizeof...(T))          //
     struct tuple_element<N, lyrahgames::xstd::tuple<T...>> {
