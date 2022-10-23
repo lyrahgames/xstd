@@ -125,6 +125,14 @@
             -
         </td>
     </tr>
+    <tr>
+        <td>Optional Dependencies:</td>
+        <td>
+            <a href="http://github.com/build2-packaging/doctest">
+                doctest
+            </a>
+        </td>
+    </tr>
 </table>
 </b>
 
