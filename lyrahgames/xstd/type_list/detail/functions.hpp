@@ -1,4 +1,6 @@
 #pragma once
+#include <lyrahgames/xstd/utility.hpp>
+//
 #include <lyrahgames/xstd/type_list/common.hpp>
 #include <lyrahgames/xstd/value_list/common.hpp>
 
@@ -91,18 +93,6 @@ template <typename t, typename... types>
 struct back<type_list<t, types...>> {
   using type = typename back<type_list<types...>>::type;
 };
-
-//
-constexpr auto aligned_offset_padding(size_t offset, size_t alignment) noexcept
-    -> size_t {
-  return alignment - 1 - ((offset + alignment - 1) % alignment);
-}
-
-//
-constexpr auto aligned_offset(size_t offset, size_t alignment) noexcept
-    -> size_t {
-  return offset + aligned_offset_padding(offset, alignment);
-}
 
 // For empty structs or tuples, the alignment is 1.
 //

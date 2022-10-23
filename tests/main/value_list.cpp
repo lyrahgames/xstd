@@ -1,5 +1,6 @@
 #include <doctest/doctest.h>
 //
+#include <lyrahgames/xstd/meta.hpp>
 #include <lyrahgames/xstd/type_list/type_list.hpp>
 #include <lyrahgames/xstd/value_list/value_list.hpp>
 

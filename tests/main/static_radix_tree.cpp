@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iostream>
 //
+#include <lyrahgames/xstd/meta.hpp>
 #include <lyrahgames/xstd/static_radix_tree.hpp>
 
 using namespace std;

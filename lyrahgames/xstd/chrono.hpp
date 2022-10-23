@@ -3,8 +3,8 @@
 #include <concepts>
 #include <functional>
 //
-#include <lyrahgames/xstd/builtin_types.hpp>
 #include <lyrahgames/xstd/meta.hpp>
+#include <lyrahgames/xstd/utility.hpp>
 
 namespace lyrahgames::xstd {
 

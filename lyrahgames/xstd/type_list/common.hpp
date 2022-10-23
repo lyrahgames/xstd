@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <type_traits>
 //
-#include <lyrahgames/xstd/meta.hpp>
+// #include <lyrahgames/xstd/meta.hpp>
 
 namespace lyrahgames::xstd {
 

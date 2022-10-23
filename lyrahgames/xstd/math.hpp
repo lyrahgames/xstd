@@ -1,9 +1,13 @@
 #pragma once
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
+#include <bit>
+#include <cmath>
+#include <numbers>
+//
+#include <lyrahgames/xstd/utility.hpp>
 
 namespace lyrahgames::xstd {
+
+using namespace std::numbers;
 
 inline uint32_t log2(const uint32_t x) {
   uint32_t y;
@@ -22,6 +26,7 @@ inline uint64_t log2(uint64_t x) noexcept {
 /// If the given number is zero the function returns zero.
 /// The function fails if the answer would be 2^32.
 /// With NDEBUG defined, it would also return zero.
+///
 inline uint32_t ceil_pow2(uint32_t x) {
   assert(x <= (uint32_t{1} << 31));
   return uint64_t{1} << (log2(x - 1) + 1);
@@ -31,11 +36,17 @@ inline uint32_t ceil_pow2(uint32_t x) {
 /// that is bigger or equal to the given positive number.
 /// The function fails if the given number is zero or if the answer would be
 /// 2^64. With NDEBUG defined, undefined behavior is the result in such cases.
+///
 inline uint64_t ceil_pow2(uint64_t x) {
   assert((0 < x) && (x <= (uint64_t{1} << 63)));
   return uint64_t{1} << (log2(x - 1) + 1);
 }
 
+/// Return the N-th non-negative power of the given value.
+/// The exponent is a compile-time constant which will result
+/// in the construction of an efficient multiplication expression.
+/// Especially useful for the use in automatic differentiation.
+///
 template <size_t N>
 constexpr auto pow(auto x) noexcept {
   if constexpr (N == 0)

@@ -1,6 +1,9 @@
 #pragma once
+#include <compare>
 #include <concepts>
 #include <functional>
+#include <type_traits>
+#include <typeinfo>
 
 namespace lyrahgames::xstd {
 
@@ -12,10 +15,15 @@ constexpr auto print_type() = delete;
 template <typename T>
 constexpr auto print_type(T) = delete;
 
+template <typename T>
+using reduction = std::decay_t<T>;
+
 }  // namespace meta
 
 namespace generic {
 
+///
+///
 template <typename T, typename U>
 concept identical = std::same_as<T, U>;
 
@@ -63,63 +71,6 @@ struct strict_equal<x, x> : std::true_type {};
 
 template <auto x, auto y>
 constexpr bool strict_equal = detail::strict_equal<x, y>::value;
-
-// namespace detail {
-
-// // Access to elements of pack extension by using indices.
-// template <size_t index, typename... types>
-// struct variadic_projection;
-
-// template <size_t index>
-// struct variadic_projection<index> {};
-
-// template <typename t, typename... types>
-// struct variadic_projection<0, t, types...> {
-//   using type = t;
-// };
-
-// template <size_t index, typename t, typename... types>
-// struct variadic_projection<index, t, types...> {
-//   using type = typename variadic_projection<index - 1, types...>::type;
-// };
-
-// template <typename T>
-// struct size;
-
-// template <typename T>
-// struct empty;
-
-// template <typename T, typename U>
-// struct contains;
-
-// template <typename T, auto x>
-// struct element;
-
-// template <typename T>
-// struct front;
-
-// template <typename T>
-// struct back;
-
-// }  // namespace detail
-
-// template <typename T>
-// constexpr auto size = detail::size<T>::value;
-
-// template <typename T>
-// constexpr auto empty = detail::empty<T>::value;
-
-// template <typename T, typename U>
-// constexpr auto contains = detail::contains<T, U>::value;
-
-// template <typename T, auto x>
-// using element = typename detail::element<T, x>::type;
-
-// template <typename T>
-// using front = typename detail::front<T>::type;
-
-// template <typename T>
-// using back = typename detail::back<T>::type;
 
 }  // namespace meta
 

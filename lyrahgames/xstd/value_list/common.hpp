@@ -1,8 +1,6 @@
 #pragma once
 #include <cstddef>
 #include <type_traits>
-//
-#include <lyrahgames/xstd/meta.hpp>
 
 namespace lyrahgames::xstd {
 
