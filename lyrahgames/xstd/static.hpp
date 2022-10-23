@@ -37,4 +37,24 @@ using iota =
 
 }  // namespace meta::value_list
 
+namespace detail::type_list {
+
+template <instance::type_list list, instance::index_list indices>
+struct permutation;
+template <typename... types, size_t... indices>
+struct permutation<type_list<types...>, xstd::value_list<indices...>> {
+  using list = type_list<types...>;
+  using type = type_list<typename list::template element<indices>...>;
+};
+
+}  // namespace detail::type_list
+
+namespace meta::type_list {
+
+template <instance::type_list list, instance::index_list indices>
+using permutation =
+    typename xstd::detail::type_list::permutation<list, indices>::type;
+
+}
+
 }  // namespace lyrahgames::xstd

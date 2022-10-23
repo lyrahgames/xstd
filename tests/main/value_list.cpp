@@ -1,5 +1,6 @@
 #include <doctest/doctest.h>
 //
+#include <lyrahgames/xstd/static.hpp>
 #include <lyrahgames/xstd/value_list.hpp>
 
 using namespace lyrahgames::xstd;
@@ -554,3 +555,27 @@ static_assert(meta::equal<assignment<value_list<-1, 'c', true>, 1, nullptr>,
                           value_list<-1, nullptr, true>>);
 static_assert(meta::equal<assignment<value_list<-1, 'c', true>, 2, nullptr>,
                           value_list<-1, 'c', nullptr>>);
+
+// Sort
+// using namespace meta::type_list;
+using package = type_list<int32_t, char, int64_t, float>;
+using indices = meta::value_list::iota<package::size>;
+constexpr auto alignment_less = []<auto x, auto y> {
+  return alignof(typename package::template element<x>) >=
+         alignof(typename package::template element<y>);
+};
+using sigma = sort<indices, alignment_less>;
+constexpr auto inv_less = []<auto x, auto y> {
+  return sigma::template element<x> <= sigma::template element<y>;
+};
+using inverse_sigma = sort<indices, inv_less>;
+using tight_package = meta::type_list::permutation<package, sigma>;
+static_assert(meta::equal<    //
+              tight_package,  //
+              type_list<int64_t, int32_t, float, char>>);
+
+static_assert(
+    meta::equal<
+        meta::type_list::element<tight_package,
+                                 meta::value_list::element<inverse_sigma, 0>>,
+        meta::type_list::element<package, 0>>);

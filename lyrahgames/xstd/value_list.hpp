@@ -178,25 +178,28 @@ template <instance::value_list list, auto value>
 using try_remove_value = typename list::template try_remove_value<value>;
 
 /// Assign a new value given by its index.
+///
 template <instance::value_list list, size_t index, auto value>
 requires(index < size<list>)  //
     using assignment = typename list::template assignment<index, value>;
 
 /// Concatenate two given value lists.
+///
 template <instance::value_list x, instance::value_list y>
 using concatenation = typename x::template concat<y>;
 
 /// Get a value list with reversed order of all contained values.
+///
 template <instance::value_list list>
 using reverse = typename list::reverse;
 
 /// Sort all contained types by the given order relation predicate.
-// template <instance::value_list list,
-//           template <typename, typename>
-//           typename less>
-// using sort = typename list::template sort<less>;
+///
+template <instance::value_list list, auto less>
+using sort = typename list::template sort<less>;
 
 /// Swap two contained values by their given indices.
+///
 template <instance::value_list list, size_t i, size_t j>
 requires(i < size<list>) && (j < size<list>)  //
     using swap = typename list::template swap<i, j>;
@@ -508,64 +511,65 @@ requires(index < list::size)  //
 };
 
 //
-// template <instance::value_list left,
-//           instance::value_list right,
-//           template <typename, typename>
-//           typename less>
-// struct merge;
-// template <template <typename, typename> typename less>
-// struct merge<value_list<>, value_list<>, less> {
-//   using type = value_list<>;
-// };
-// template <template <typename, typename> typename less, typename... T>
-// struct merge<value_list<T...>, value_list<>, less> {
-//   using type = value_list<T...>;
-// };
-// template <template <typename, typename> typename less, typename... T>
-// struct merge<value_list<>, value_list<T...>, less> {
-//   using type = value_list<T...>;
-// };
-// template <template <typename, typename> typename less,
-//           typename T,
-//           typename U,
-//           typename... t,
-//           typename... u>
-// requires less<T, U>::value  //
-//     struct merge<value_list<T, t...>, value_list<U, u...>, less> {
-//   using type = typename push_front<
-//       typename merge<value_list<t...>, value_list<U, u...>, less>::type,
-//       T>::type;
-// };
-// template <template <typename, typename> typename less,
-//           typename T,
-//           typename U,
-//           typename... t,
-//           typename... u>
-// requires(!less<T, U>::value)  //
-//     struct merge<value_list<T, t...>, value_list<U, u...>, less> {
-//   using type = typename push_front<
-//       typename merge<value_list<T, t...>, value_list<u...>, less>::type,
-//       U>::type;
-// };
+template <instance::value_list left, instance::value_list right, auto less>
+struct merge;
+template <auto less>
+struct merge<value_list<>, value_list<>, less> {
+  using type = value_list<>;
+};
+template <auto less, auto... values>
+struct merge<value_list<values...>, value_list<>, less> {
+  using type = value_list<values...>;
+};
+template <auto less, auto... values>
+struct merge<value_list<>, value_list<values...>, less> {
+  using type = value_list<values...>;
+};
+template <auto less,
+          auto left,
+          auto right,
+          auto... left_tail,
+          auto... right_tail>
+requires(less.template operator()<left, right>())  //
+    struct merge<value_list<left, left_tail...>,
+                 value_list<right, right_tail...>,
+                 less> {
+  using type =
+      typename push_front<typename merge<value_list<left_tail...>,
+                                         value_list<right, right_tail...>,
+                                         less>::type,
+                          left>::type;
+};
+template <auto less,
+          auto left,
+          auto right,
+          auto... left_tail,
+          auto... right_tail>
+requires(!less.template operator()<left, right>())  //
+    struct merge<value_list<left, left_tail...>,
+                 value_list<right, right_tail...>,
+                 less> {
+  using type =
+      typename push_front<typename merge<value_list<left, left_tail...>,
+                                         value_list<right_tail...>,
+                                         less>::type,
+                          right>::type;
+};
 
 //
-// template <instance::value_list list,
-//           template <typename, typename>
-//           typename less>
-// struct sort {
-//   static constexpr size_t half = list::size / 2;
-//   using type = typename merge<
-//       typename sort<typename range<list, 0, half>::type, less>::type,
-//       typename sort<typename range<list, half, list::size>::type,
-//       less>::type, less>::type;
-// };
-// template <instance::value_list list,
-//           template <typename, typename>
-//           typename less>
-// requires(list::size <= 1)  //
-//     struct sort<list, less> {
-//   using type = list;
-// };
+template <instance::value_list list, auto less>
+struct sort {
+  static constexpr size_t half = list::size / 2;
+  using type = typename merge<
+      typename sort<typename range<list, 0, half>::type, less>::type,
+      typename sort<typename range<list, half, list::size>::type, less>::type,
+      less>::type;
+};
+template <instance::value_list list, auto less>
+requires(list::size <= 1)  //
+    struct sort<list, less> {
+  using type = list;
+};
 
 //
 // template <instance::value_list list,
@@ -697,8 +701,8 @@ struct base {
   template <size_t i, size_t j>
   using swap = typename detail::value_list::swap<self, i, j>::type;
 
-  // template <template <typename, typename> typename less>
-  // using sort = typename detail::value_list::sort<self, less>::type;
+  template <auto less>
+  using sort = typename detail::value_list::sort<self, less>::type;
 
   // template <typename type, template <typename, typename> typename condition>
   // using insert_when =
