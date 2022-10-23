@@ -185,6 +185,11 @@ requires(i < size<list>) && (j < size<list>)  //
 template <instance::type_list list, template <typename> typename f>
 using transformation = typename list::template transformation<f>;
 
+/// Permute the elements of the given type list according to the given indices.
+///
+template <instance::type_list list, instance::index_list indices>
+using permutation = typename list::template permutation<indices>;
+
 /// Generate code based on given lambda expression for each contained type.
 ///
 template <instance::type_list list>

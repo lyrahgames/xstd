@@ -1,6 +1,6 @@
 #pragma once
 #include <lyrahgames/xstd/type_list/common.hpp>
-#include <lyrahgames/xstd/value_list/common.hpp>
+#include <lyrahgames/xstd/value_list/detail/functions.hpp>
 
 namespace lyrahgames::xstd {
 
@@ -176,6 +176,20 @@ template <instance::value_list list>
 constexpr bool for_each_until(auto&& f) {
   return list::for_each_until(std::forward<decltype(f)>(f));
 }
+
+inline constexpr auto default_increment = [](auto x) { return ++x; };
+
+/// Get a value list with the given size
+/// of consecutive values starting from
+/// the given offset and generated
+/// by the provided unary increment function.
+/// The default increment uses '++offset'.
+///
+template <size_t size,
+          auto offset = size_t{0},
+          auto increment = default_increment>
+using iota =
+    typename xstd::detail::value_list::iota<size, offset, increment>::type;
 
 /// Reduce the value list containing only of bools
 /// by applying a logical 'and' operation.

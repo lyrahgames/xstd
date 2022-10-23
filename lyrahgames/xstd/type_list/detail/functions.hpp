@@ -1,6 +1,6 @@
 #pragma once
 #include <lyrahgames/xstd/type_list/common.hpp>
-#include <lyrahgames/xstd/value_list/meta.hpp>
+#include <lyrahgames/xstd/value_list/common.hpp>
 
 namespace lyrahgames::xstd {
 
@@ -421,9 +421,20 @@ requires(!less<t, front>::value)  //
 //
 template <instance::type_list list, template <typename> typename f>
 struct transformation;
+//
 template <template <typename> typename f, typename... types>
 struct transformation<type_list<types...>, f> {
   using type = type_list<typename f<types>::type...>;
+};
+
+//
+template <instance::type_list list, instance::index_list indices>
+struct permutation;
+//
+template <typename... types, size_t... indices>
+struct permutation<type_list<types...>, xstd::value_list<indices...>> {
+  using list = type_list<types...>;
+  using type = type_list<typename list::template element<indices>...>;
 };
 
 template <instance::type_list list>

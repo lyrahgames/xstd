@@ -92,6 +92,10 @@ struct base {
   using transformation =
       typename detail::type_list::transformation<self, f>::type;
 
+  template <instance::index_list indices>
+  using permutation =
+      typename detail::type_list::permutation<self, indices>::type;
+
   static constexpr auto for_each(auto&& f) {
     (f.template operator()<types>(), ...);
   }

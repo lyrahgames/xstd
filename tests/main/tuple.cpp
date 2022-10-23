@@ -6,7 +6,6 @@
 //
 #include <doctest/doctest.h>
 //
-#include <lyrahgames/xstd/static.hpp>
 #include <lyrahgames/xstd/tuple.hpp>
 //
 #include "log_value.hpp"

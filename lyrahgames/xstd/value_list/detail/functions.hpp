@@ -1,5 +1,5 @@
 #pragma once
-#include <lyrahgames/xstd/type_list/meta.hpp>
+#include <lyrahgames/xstd/type_list/common.hpp>
 #include <lyrahgames/xstd/value_list/common.hpp>
 
 namespace lyrahgames::xstd {
@@ -359,7 +359,8 @@ requires(list::size <= 1)  //
 
 //
 template <instance::value_list list, auto function>
-struct transform;
+struct transform {};
+//
 template <auto function, auto... values>
 struct transform<value_list<values...>, function> {
   using type = value_list<function.template operator()<values>()...>;
@@ -373,11 +374,14 @@ struct reduce {
       operator()<reduce<typename list::pop_back, function, init>::value,
                  list::back>();
 };
+//
 template <auto function, auto init>
 struct reduce<value_list<>, function, init> {
   static constexpr auto value = init;
 };
 
+//
+//
 template <instance::value_list list>
 constexpr bool for_each_until(auto&& f) {
   if constexpr (list::empty)
@@ -388,6 +392,19 @@ constexpr bool for_each_until(auto&& f) {
         std::forward<decltype(f)>(f));
   }
 }
+
+//
+//
+template <size_t size, auto offset, auto increment>
+struct iota {
+  using type = typename iota<size - 1, increment(offset), increment>::type::
+      template push_front<offset>;
+};
+//
+template <auto offset, auto increment>
+struct iota<0, offset, increment> {
+  using type = value_list<>;
+};
 
 }  // namespace detail::value_list
 
