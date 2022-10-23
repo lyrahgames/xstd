@@ -13,11 +13,9 @@
 !*manifest
 !*testscript
 
-!COPYING
+!COPYING.md
 !README.md
 
 !.clang-format
 
-!.gitmodules
-!.gitattributes
-!.gitignore
+!.git*
