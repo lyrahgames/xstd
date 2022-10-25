@@ -153,34 +153,34 @@ SCENARIO("") {
   });
 }
 
-// SCENARIO("") {
-//   struct_tuple<int, int> x{1, 2};
+SCENARIO("") {
+  struct_tuple<int, int> x{1, 2};
 
-//   CHECK(value<0>(x) == 1);
-//   CHECK(value<1>(x) == 2);
+  CHECK(value<0>(x) == 1);
+  CHECK(value<1>(x) == 2);
 
-//   ++value<0>(x);
-//   ++value<1>(x);
+  ++value<0>(x);
+  ++value<1>(x);
 
-//   CHECK(value<0>(x) == 2);
-//   CHECK(value<1>(x) == 3);
+  CHECK(value<0>(x) == 2);
+  CHECK(value<1>(x) == 3);
 
-//   // struct_tuple<int&, int&> y = x;
-// }
+  // struct_tuple<int&, int&> y = x;
+}
 
-// SCENARIO("") {
-//   auto x = struct_tuple{1, 2};
+SCENARIO("") {
+  auto x = struct_tuple{1, 2};
 
-//   auto& [a, b] = x;
+  auto& [a, b] = x;
 
-//   CHECK(value<0>(x) == 1);
-//   CHECK(value<1>(x) == 2);
-//   CHECK(a == 1);
-//   CHECK(b == 2);
+  CHECK(value<0>(x) == 1);
+  CHECK(value<1>(x) == 2);
+  CHECK(a == 1);
+  CHECK(b == 2);
 
-//   ++a;
-//   ++b;
+  ++a;
+  ++b;
 
-//   CHECK(value<0>(x) == 2);
-//   CHECK(value<1>(x) == 3);
-// }
+  CHECK(value<0>(x) == 2);
+  CHECK(value<1>(x) == 3);
+}

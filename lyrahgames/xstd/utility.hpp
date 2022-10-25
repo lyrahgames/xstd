@@ -155,4 +155,14 @@ constexpr auto aligned_offset(size_t offset, size_t alignment) noexcept
   return offset + aligned_offset_padding(offset, alignment);
 }
 
+///
+template <size_t index>
+constexpr decltype(auto)  //
+forward_element(auto&& first, auto&&... tail) noexcept {
+  if constexpr (index == 0)
+    return std::forward<decltype(first)>(first);
+  else
+    return forward_element<index - 1>(std::forward<decltype(tail)>(tail)...);
+}
+
 }  // namespace lyrahgames::xstd

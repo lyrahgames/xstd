@@ -1,5 +1,6 @@
 #pragma once
 #include <lyrahgames/xstd/type_list/type_list.hpp>
+#include <lyrahgames/xstd/value_list/value_list.hpp>
 
 namespace lyrahgames::xstd {
 
@@ -160,9 +161,22 @@ struct struct_tuple : cast<typename type_list<T...>::reverse>::type {
   using type = typename types::template element<index>;
 
   using reverse_type = typename cast<typename type_list<T...>::reverse>::type;
-  using reverse_type::reverse_type;
+  // using reverse_type::reverse_type;
 
   static constexpr auto size() noexcept -> size_t { return sizeof...(T); }
+  using permutation = typename meta::value_list::iota<size()>::reverse;
+
+  struct_tuple() = default;
+
+  template <size_t... indices>
+  struct_tuple(value_list<indices...>, auto&&... args)  //
+      requires(size() == sizeof...(args))
+      : reverse_type(forward_element<indices>(
+            std::forward<decltype(args)>(args)...)...) {}
+
+  struct_tuple(auto&&... args)  //
+      requires(size() == sizeof...(args))
+      : struct_tuple(permutation{}, std::forward<decltype(args)>(args)...) {}
 
   constexpr decltype(auto) reverse() & noexcept {
     return static_cast<reverse_type&>(*this);
