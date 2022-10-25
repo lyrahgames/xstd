@@ -45,7 +45,8 @@ using types = typename list::types;
 template <instance::value_list list, auto value>
 constexpr bool contains = list::template contains<value>;
 
-///
+/// Checks whether every value in the list is only contained once.
+/// This would make the value list a mathematical set.
 ///
 template <instance::value_list list>
 constexpr bool is_set = list::is_set;

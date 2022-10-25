@@ -123,6 +123,20 @@ concept irreducible = reducible<T, T>;
 
 }  // namespace generic
 
+// The namespace 'instance' is used for concepts that check,
+// whether a given type is a specialization of a specific type template.
+// Because types and type templates will sometimes provide the same name
+// as similar concepts, this namespace is mandatory to differentiate them.
+//
+namespace instance {
+
+// As in the namespace 'generic', we always work with type functions.
+// Hence, we make them available by default by using the namespace 'meta'.
+//
+using namespace meta;
+
+}  // namespace instance
+
 /// With respect to the given offset,
 /// compute the distance to the next offset
 /// that fulfills the given alignment.

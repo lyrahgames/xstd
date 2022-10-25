@@ -56,8 +56,10 @@ struct types<value_list<values...>> {
 //
 template <instance::value_list list>
 struct is_set : std::false_type {};
+//
 template <>
 struct is_set<value_list<>> : std::true_type {};
+//
 template <auto front, auto... tail>
 struct is_set<value_list<front, tail...>> {
   using tail_list = value_list<tail...>;

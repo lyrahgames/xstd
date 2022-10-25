@@ -6,7 +6,7 @@
 //
 #include <doctest/doctest.h>
 //
-#include <lyrahgames/xstd/tuple.hpp>
+#include <lyrahgames/xstd/regular_tuple.hpp>
 //
 #include "log_value.hpp"
 
@@ -60,13 +60,13 @@ static_assert(!generic::tuple<std::string>);
 static_assert(generic::tuple<std::array<int, 10>>);
 static_assert(generic::tuple<std::pair<int, int>>);
 static_assert(generic::tuple<std::tuple<>>);
-static_assert(generic::tuple<xstd::tuple<char, float>>);
+static_assert(generic::tuple<xstd::regular_tuple<char, float>>);
 
 SCENARIO("Tuple Value Wrapper Properties") {
   {
     using type = int&;
     using ref_type = std::reference_wrapper<int>;
-    using wrapped_type = detail::tuple::wrapper<0, type>;
+    using wrapped_type = detail::regular_tuple::wrapper<0, type>;
 
     static_assert(is_copy_assignable_v<type> == is_copy_assignable_v<ref_type>);
     static_assert(is_trivially_copy_assignable_v<type> ==
@@ -75,11 +75,11 @@ SCENARIO("Tuple Value Wrapper Properties") {
                   is_nothrow_copy_assignable_v<ref_type>);
   }
 
-  // constexpr detail::tuple::wrapper<0, int> x{};
+  // constexpr detail::regular_tuple::wrapper<0, int> x{};
   type_list<char, int, float, double, string, nothing, vector<int>,
             array<float, 10>>  //
       ::for_each([]<typename type> {
-        using wrapped_type = detail::tuple::wrapper<0, type>;
+        using wrapped_type = detail::regular_tuple::wrapper<0, type>;
         // Size ond Alignment
         static_assert(sizeof(type) == sizeof(wrapped_type));
         static_assert(alignof(type) == alignof(wrapped_type));
@@ -145,19 +145,19 @@ SCENARIO("Tuple Value Wrapper Properties") {
 }
 
 SCENARIO("Tuple Properties") {
-  using xstd::tuple;
+  using xstd::regular_tuple;
 
-  type_list<                //
-      tuple<>,              //
-      tuple<nothing>,       //
-      tuple<char>,          //
-      tuple<int>,           //
-      tuple<float>,         //
-      tuple<int, nothing>,  //
-      tuple<nothing, int>,  //
-      tuple<int, int>,      //
-      // tuple<nothing, nothing>,  //
-      tuple<>  //
+  type_list<                        //
+      regular_tuple<>,              //
+      regular_tuple<nothing>,       //
+      regular_tuple<char>,          //
+      regular_tuple<int>,           //
+      regular_tuple<float>,         //
+      regular_tuple<int, nothing>,  //
+      regular_tuple<nothing, int>,  //
+      regular_tuple<int, int>,      //
+      // regular_tuple<nothing, nothing>,  //
+      regular_tuple<>  //
       >::for_each([]<typename type> {
     static_assert(sizeof(type) == type::types::tuple_byte_size);
     static_assert(alignof(type) == type::types::alignment);
@@ -165,21 +165,21 @@ SCENARIO("Tuple Properties") {
 }
 
 SCENARIO("") {
-  using xstd::tuple;
+  using xstd::regular_tuple;
 
-  type_list<          //
-      tuple<char>,    //
-      tuple<short>,   //
-      tuple<int>,     //
-      tuple<float>,   //
-      tuple<double>,  //
+  type_list<                  //
+      regular_tuple<char>,    //
+      regular_tuple<short>,   //
+      regular_tuple<int>,     //
+      regular_tuple<float>,   //
+      regular_tuple<double>,  //
       //
-      tuple<int, int>,   //
-      tuple<char, int>,  //
+      regular_tuple<int, int>,   //
+      regular_tuple<char, int>,  //
       //
-      tuple<char, double, char, int>,  //
+      regular_tuple<char, double, char, int>,  //
       //
-      tuple<>  //
+      regular_tuple<>  //
       >::for_each([]<typename tuple_type> {
     using types = typename tuple_type::types;
     constexpr auto size = types::size;
@@ -198,12 +198,13 @@ SCENARIO("") {
 }
 
 SCENARIO("Tuple Member Offset") {
-  using xstd::tuple;
-  using type = tuple<int, nothing, char, double, nothing>;
+  using xstd::regular_tuple;
+  using type = regular_tuple<int, nothing, char, double, nothing>;
   using types = type::types;
 
   // static_assert(sizeof(type) == types::tuple_byte_size);
-  // static_assert(sizeof(std::tuple<int, nothing, char, double, nothing>) ==
+  // static_assert(sizeof(std::regular_tuple<int, nothing, char, double,
+  // nothing>) ==
   //               types::tuple_byte_size);
   // static_assert(alignof(type) == types::alignment);
 
@@ -235,26 +236,26 @@ SCENARIO("Tuple Member Offset") {
 }
 
 SCENARIO("") {
-  using xstd::tuple;
-  static_assert(sizeof(tuple<>) == 1);
-  static_assert(alignof(tuple<>) == 1);
-  static_assert(is_empty_v<tuple<>>);
-  static_assert(is_empty_v<tuple<nothing>>);
+  using xstd::regular_tuple;
+  static_assert(sizeof(regular_tuple<>) == 1);
+  static_assert(alignof(regular_tuple<>) == 1);
+  static_assert(is_empty_v<regular_tuple<>>);
+  static_assert(is_empty_v<regular_tuple<nothing>>);
   //
-  static_assert(sizeof(tuple<char>) == sizeof(char));
-  static_assert(alignof(tuple<char>) == alignof(char));
+  static_assert(sizeof(regular_tuple<char>) == sizeof(char));
+  static_assert(alignof(regular_tuple<char>) == alignof(char));
   //
-  static_assert(sizeof(tuple<short>) == sizeof(short));
-  static_assert(alignof(tuple<short>) == alignof(short));
+  static_assert(sizeof(regular_tuple<short>) == sizeof(short));
+  static_assert(alignof(regular_tuple<short>) == alignof(short));
   //
-  static_assert(sizeof(tuple<float>) == sizeof(float));
-  static_assert(alignof(tuple<float>) == alignof(float));
+  static_assert(sizeof(regular_tuple<float>) == sizeof(float));
+  static_assert(alignof(regular_tuple<float>) == alignof(float));
   //
-  static_assert(sizeof(tuple<double>) == sizeof(double));
-  static_assert(alignof(tuple<double>) == alignof(double));
+  static_assert(sizeof(regular_tuple<double>) == sizeof(double));
+  static_assert(alignof(regular_tuple<double>) == alignof(double));
 
   {
-    using type = tuple<>;
+    using type = regular_tuple<>;
     static_assert(is_default_constructible_v<type>);
     static_assert(is_trivially_default_constructible_v<type>);
     static_assert(is_nothrow_default_constructible_v<type>);
@@ -272,13 +273,13 @@ SCENARIO("") {
   {
     static_assert(is_trivially_default_constructible_v<nothing>);
 
-    using type = detail::tuple::wrapper<0, nothing>;
+    using type = detail::regular_tuple::wrapper<0, nothing>;
     static_assert(is_default_constructible_v<type>);
     static_assert(is_trivially_default_constructible_v<type>);
     static_assert(is_nothrow_default_constructible_v<type>);
   }
   {
-    using type = tuple<int, char, double>;
+    using type = regular_tuple<int, char, double>;
     static_assert(is_default_constructible_v<type>);
     static_assert(is_trivially_default_constructible_v<type>);
     static_assert(is_nothrow_default_constructible_v<type>);
@@ -305,8 +306,8 @@ SCENARIO("") {
     reset(log_string::log);
 
     {
-      using xstd::tuple;
-      tuple<log_int, log_int, log_string> x{1, 2, "Test"};
+      using xstd::regular_tuple;
+      regular_tuple<log_int, log_int, log_string> x{1, 2, "Test"};
 
       CHECK(value<0>(x).value == 1);
       CHECK(value<1>(x).value == 2);
@@ -318,7 +319,7 @@ SCENARIO("") {
       log_string_state.counters[log_string_state.construct_calls] = 1;
       CHECK(log_string::log == log_string_state);
 
-      tuple<log_int&, const log_int&, log_string&> y = x;
+      regular_tuple<log_int&, const log_int&, log_string&> y = x;
 
       CHECK(log_int::log == log_int_state);
       CHECK(log_string::log == log_string_state);
@@ -347,10 +348,10 @@ SCENARIO("") {
       CHECK(value<2>(x).value == "Test more and even more");
       CHECK(value<2>(y).value == "Test more and even more");
 
-      // tuple<log_int, log_int, log_string> z{
+      // regular_tuple<log_int, log_int, log_string> z{
       //     move(value<0>(y)), move(value<1>(y)), move(value<2>(y))};
-      tuple<log_int, log_int, log_string> z = std::move(y);
-      // tuple<log_int, log_int, log_string> z{};
+      regular_tuple<log_int, log_int, log_string> z = std::move(y);
+      // regular_tuple<log_int, log_int, log_string> z{};
       // z = std::move(y);
 
       log_int_state.counters[log_int_state.copy_construct_calls] += 2;
@@ -401,7 +402,7 @@ SCENARIO("") {
         CHECK(c.value == string("Test more and even more"));
       }
 
-      tuple<log_int, log_int, log_string> v{10, 20, "test"};
+      regular_tuple<log_int, log_int, log_string> v{10, 20, "test"};
 
       log_int_state.counters[log_int_state.construct_calls] += 2;
       CHECK(log_int::log == log_int_state);
@@ -417,7 +418,7 @@ SCENARIO("") {
 
       // Cannot rassign y due to references.
       // y = v;
-      tuple<log_int&, const log_int&, log_string&> w = v;
+      regular_tuple<log_int&, const log_int&, log_string&> w = v;
 
       CHECK(log_int::log == log_int_state);
       CHECK(log_string::log == log_string_state);
