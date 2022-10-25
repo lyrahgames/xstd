@@ -1,37 +1,9 @@
 #pragma once
-#include <compare>
-#include <concepts>
-#include <functional>
-#include <type_traits>
-#include <typeinfo>
+#include <lyrahgames/xstd/utility.hpp>
 
 namespace lyrahgames::xstd {
 
-namespace meta {
-
-template <typename T>
-constexpr auto print_type() = delete;
-
-template <typename T>
-constexpr auto print_type(T) = delete;
-
-template <typename T>
-using reduction = std::decay_t<T>;
-
-}  // namespace meta
-
 namespace generic {
-
-///
-///
-template <typename T, typename U>
-concept identical = std::same_as<T, U>;
-
-template <typename T, typename U>
-concept reducible = identical<std::decay_t<T>, U>;
-
-template <typename T>
-concept irreducible = reducible<T, T>;
 
 template <typename T>
 concept callable = requires(T v) {
@@ -39,40 +11,6 @@ concept callable = requires(T v) {
 };
 
 }  // namespace generic
-
-namespace generic {
-
-namespace detail {
-
-template <template <typename...> typename T, typename U>
-struct instantiated : std::false_type {};
-
-template <template <typename...> typename T, typename... U>
-struct instantiated<T, T<U...>> : std::true_type {};
-
-}  // namespace detail
-
-template <typename T, template <typename...> typename U>
-concept instantiation = detail::instantiated<U, std::decay_t<T>>::value;
-
-}  // namespace generic
-
-namespace meta {
-
-template <typename T, typename U>
-constexpr auto equal = std::same_as<T, U>;
-
-namespace detail {
-template <auto x, auto y>
-struct strict_equal : std::false_type {};
-template <auto x>
-struct strict_equal<x, x> : std::true_type {};
-}  // namespace detail
-
-template <auto x, auto y>
-constexpr bool strict_equal = detail::strict_equal<x, y>::value;
-
-}  // namespace meta
 
 namespace meta {
 

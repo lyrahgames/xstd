@@ -1,6 +1,5 @@
 #include <doctest/doctest.h>
 //
-#include <lyrahgames/xstd/meta.hpp>
 #include <lyrahgames/xstd/type_list/type_list.hpp>
 #include <lyrahgames/xstd/value_list/value_list.hpp>
 
@@ -91,22 +90,23 @@ static_assert(!value_list<'c', 'c'>::is_set);
 static_assert(!value_list<-1, -1>::is_set);
 
 // Accessing types by index
+template <auto x, auto y>
+static constexpr bool strict_equal =
+    lyrahgames::xstd::detail::value_list::strict_equal<x, y>::value;
 //
 // Member Type Function
-static_assert(meta::strict_equal<value_list<1, 'c'>::element<0>, 1>);
-static_assert(meta::strict_equal<value_list<1, 'c'>::element<1>, 'c'>);
-static_assert(
-    meta::strict_equal<value_list<nullptr, 1, 'c'>::element<0>, nullptr>);
-static_assert(meta::strict_equal<value_list<nullptr, 1, 'c'>::element<1>, 1>);
-static_assert(meta::strict_equal<value_list<nullptr, 1, 'c'>::element<2>, 'c'>);
+static_assert(strict_equal<value_list<1, 'c'>::element<0>, 1>);
+static_assert(strict_equal<value_list<1, 'c'>::element<1>, 'c'>);
+static_assert(strict_equal<value_list<nullptr, 1, 'c'>::element<0>, nullptr>);
+static_assert(strict_equal<value_list<nullptr, 1, 'c'>::element<1>, 1>);
+static_assert(strict_equal<value_list<nullptr, 1, 'c'>::element<2>, 'c'>);
 // Non-Member Type Function
-static_assert(meta::strict_equal<element<value_list<1>, 0>, 1>);
-static_assert(meta::strict_equal<element<value_list<1, 'c'>, 0>, 1>);
-static_assert(meta::strict_equal<element<value_list<1, 'c'>, 1>, 'c'>);
-static_assert(
-    meta::strict_equal<element<value_list<nullptr, 1, 'c'>, 0>, nullptr>);
-static_assert(meta::strict_equal<element<value_list<nullptr, 1, 'c'>, 1>, 1>);
-static_assert(meta::strict_equal<element<value_list<nullptr, 1, 'c'>, 2>, 'c'>);
+static_assert(strict_equal<element<value_list<1>, 0>, 1>);
+static_assert(strict_equal<element<value_list<1, 'c'>, 0>, 1>);
+static_assert(strict_equal<element<value_list<1, 'c'>, 1>, 'c'>);
+static_assert(strict_equal<element<value_list<nullptr, 1, 'c'>, 0>, nullptr>);
+static_assert(strict_equal<element<value_list<nullptr, 1, 'c'>, 1>, 1>);
+static_assert(strict_equal<element<value_list<nullptr, 1, 'c'>, 2>, 'c'>);
 
 // Get the index of a contained value
 //
@@ -128,24 +128,24 @@ static_assert(index<value_list<nullptr, 'c', 1>, 1> == 2);
 // Accessing the front
 //
 // Member Type Function
-static_assert(meta::strict_equal<value_list<-1>::front, -1>);
-static_assert(meta::strict_equal<value_list<-1, 'c'>::front, -1>);
-static_assert(meta::strict_equal<value_list<nullptr, -1, 'c'>::front, nullptr>);
+static_assert(strict_equal<value_list<-1>::front, -1>);
+static_assert(strict_equal<value_list<-1, 'c'>::front, -1>);
+static_assert(strict_equal<value_list<nullptr, -1, 'c'>::front, nullptr>);
 // Non-Member Type Function
-static_assert(meta::strict_equal<front<value_list<-1>>, -1>);
-static_assert(meta::strict_equal<front<value_list<'c', -1>>, 'c'>);
-static_assert(meta::strict_equal<front<value_list<nullptr, 'c', -1>>, nullptr>);
+static_assert(strict_equal<front<value_list<-1>>, -1>);
+static_assert(strict_equal<front<value_list<'c', -1>>, 'c'>);
+static_assert(strict_equal<front<value_list<nullptr, 'c', -1>>, nullptr>);
 
 // Accessing the back
 //
 // Member Type Function
-static_assert(meta::strict_equal<value_list<-1>::back, -1>);
-static_assert(meta::strict_equal<value_list<-1, 'c'>::back, 'c'>);
-static_assert(meta::strict_equal<value_list<-1, 'c', nullptr>::back, nullptr>);
+static_assert(strict_equal<value_list<-1>::back, -1>);
+static_assert(strict_equal<value_list<-1, 'c'>::back, 'c'>);
+static_assert(strict_equal<value_list<-1, 'c', nullptr>::back, nullptr>);
 // Non-Member Type Function
-static_assert(meta::strict_equal<back<value_list<-1>>, -1>);
-static_assert(meta::strict_equal<back<value_list<'c', -1>>, -1>);
-static_assert(meta::strict_equal<back<value_list<nullptr, 'c', -1>>, -1>);
+static_assert(strict_equal<back<value_list<-1>>, -1>);
+static_assert(strict_equal<back<value_list<'c', -1>>, -1>);
+static_assert(strict_equal<back<value_list<nullptr, 'c', -1>>, -1>);
 
 // Push back values
 //
@@ -427,27 +427,30 @@ static_assert(meta::equal<value_list<-1, 'c', true, nullptr>::remove<2>,  //
 static_assert(meta::equal<value_list<-1, 'c', true, nullptr>::remove<3>,  //
                           value_list<-1, 'c', true>>);
 //
-// Non-Member Type Function
-static_assert(meta::equal<remove<value_list<-1>, 0>, value_list<>>);
-//
-static_assert(meta::equal<remove<value_list<-1, 'c'>, 0>, value_list<'c'>>);
-static_assert(meta::equal<remove<value_list<-1, 'c'>, 1>, value_list<-1>>);
-//
-static_assert(meta::equal<remove<value_list<-1, 'c', true>, 0>,  //
-                          value_list<'c', true>>);
-static_assert(meta::equal<remove<value_list<-1, 'c', true>, 1>,  //
-                          value_list<-1, true>>);
-static_assert(meta::equal<remove<value_list<-1, 'c', true>, 2>,  //
-                          value_list<-1, 'c'>>);
-//
-static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 0>,  //
-                          value_list<'c', true, nullptr>>);
-static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 1>,  //
-                          value_list<-1, true, nullptr>>);
-static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 2>,  //
-                          value_list<-1, 'c', nullptr>>);
-static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 3>,  //
-                          value_list<-1, 'c', true>>);
+SCENARIO("") {
+  using meta::value_list::remove;
+  // Non-Member Type Function
+  static_assert(meta::equal<remove<value_list<-1>, 0>, value_list<>>);
+  //
+  static_assert(meta::equal<remove<value_list<-1, 'c'>, 0>, value_list<'c'>>);
+  static_assert(meta::equal<remove<value_list<-1, 'c'>, 1>, value_list<-1>>);
+  //
+  static_assert(meta::equal<remove<value_list<-1, 'c', true>, 0>,  //
+                            value_list<'c', true>>);
+  static_assert(meta::equal<remove<value_list<-1, 'c', true>, 1>,  //
+                            value_list<-1, true>>);
+  static_assert(meta::equal<remove<value_list<-1, 'c', true>, 2>,  //
+                            value_list<-1, 'c'>>);
+  //
+  static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 0>,  //
+                            value_list<'c', true, nullptr>>);
+  static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 1>,  //
+                            value_list<-1, true, nullptr>>);
+  static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 2>,  //
+                            value_list<-1, 'c', nullptr>>);
+  static_assert(meta::equal<remove<value_list<-1, 'c', true, nullptr>, 3>,  //
+                            value_list<-1, 'c', true>>);
+}
 
 // Remove a value inside the value list given its index
 //

@@ -1,8 +1,5 @@
 #include <doctest/doctest.h>
 //
-#include <cstdint>
-//
-#include <lyrahgames/xstd/meta.hpp>
 #include <lyrahgames/xstd/type_list/type_list.hpp>
 
 // using namespace std;
@@ -696,27 +693,30 @@ static_assert(meta::equal<type_list<int, char, float, double>::remove<2>,  //
 static_assert(meta::equal<type_list<int, char, float, double>::remove<3>,  //
                           type_list<int, char, float>>);
 //
-// Non-Member Type Function
-static_assert(meta::equal<remove<type_list<int>, 0>, type_list<>>);
-//
-static_assert(meta::equal<remove<type_list<int, char>, 0>, type_list<char>>);
-static_assert(meta::equal<remove<type_list<int, char>, 1>, type_list<int>>);
-//
-static_assert(meta::equal<remove<type_list<int, char, float>, 0>,  //
-                          type_list<char, float>>);
-static_assert(meta::equal<remove<type_list<int, char, float>, 1>,  //
-                          type_list<int, float>>);
-static_assert(meta::equal<remove<type_list<int, char, float>, 2>,  //
-                          type_list<int, char>>);
-//
-static_assert(meta::equal<remove<type_list<int, char, float, double>, 0>,  //
-                          type_list<char, float, double>>);
-static_assert(meta::equal<remove<type_list<int, char, float, double>, 1>,  //
-                          type_list<int, float, double>>);
-static_assert(meta::equal<remove<type_list<int, char, float, double>, 2>,  //
-                          type_list<int, char, double>>);
-static_assert(meta::equal<remove<type_list<int, char, float, double>, 3>,  //
-                          type_list<int, char, float>>);
+SCENARIO("") {
+  using meta::type_list::remove;
+  // Non-Member Type Function
+  static_assert(meta::equal<remove<type_list<int>, 0>, type_list<>>);
+  //
+  static_assert(meta::equal<remove<type_list<int, char>, 0>, type_list<char>>);
+  static_assert(meta::equal<remove<type_list<int, char>, 1>, type_list<int>>);
+  //
+  static_assert(meta::equal<remove<type_list<int, char, float>, 0>,  //
+                            type_list<char, float>>);
+  static_assert(meta::equal<remove<type_list<int, char, float>, 1>,  //
+                            type_list<int, float>>);
+  static_assert(meta::equal<remove<type_list<int, char, float>, 2>,  //
+                            type_list<int, char>>);
+  //
+  static_assert(meta::equal<remove<type_list<int, char, float, double>, 0>,  //
+                            type_list<char, float, double>>);
+  static_assert(meta::equal<remove<type_list<int, char, float, double>, 1>,  //
+                            type_list<int, float, double>>);
+  static_assert(meta::equal<remove<type_list<int, char, float, double>, 2>,  //
+                            type_list<int, char, double>>);
+  static_assert(meta::equal<remove<type_list<int, char, float, double>, 3>,  //
+                            type_list<int, char, float>>);
+}
 
 // Assign values by their index
 //

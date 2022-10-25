@@ -1,9 +1,16 @@
 #pragma once
+// This header will provide the standard headers
+// for mathematical operations as well as some additional functionality.
+
+// Get all the basics.
+//
+#include <lyrahgames/xstd/utility.hpp>
+
+// We need bit manipulation, C-style math functions, and math constants.
+//
 #include <bit>
 #include <cmath>
 #include <numbers>
-//
-#include <lyrahgames/xstd/utility.hpp>
 
 namespace lyrahgames::xstd {
 

@@ -1,16 +1,21 @@
 #pragma once
-#include <stdexcept>
-#include <string>
+// This header module provides some standards for I/O.
+
+// Get all the basics.
+//
+#include <lyrahgames/xstd/utility.hpp>
+
+// We want to be able to work with files,
+// the console, and other string formatting.
 //
 #include <fstream>
 #include <iostream>
 #include <sstream>
-//
-#include <lyrahgames/xstd/utility.hpp>
 
 namespace lyrahgames::xstd {
 
 // 'czstring' is used because the given file path is only read once.
+//
 inline auto string_from_file(czstring file_path) -> std::string {
   using namespace std;
   // We will read all characters as block.

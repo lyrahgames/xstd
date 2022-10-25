@@ -14,6 +14,15 @@ namespace detail::value_list {
 
 using xstd::value_list;
 
+// Two constexpr values are strictly equal
+// if their types and values coincide.
+//
+template <auto x, auto y>
+struct strict_equal : std::false_type {};
+//
+template <auto x>
+struct strict_equal<x, x> : std::true_type {};
+
 //
 template <instance::value_list list>
 struct size;
@@ -33,7 +42,7 @@ struct contains : std::false_type {};
 template <auto x, auto front, auto... tail>
 struct contains<value_list<front, tail...>, x> {
   static constexpr bool value =
-      meta::strict_equal<x, front> || contains<value_list<tail...>, x>::value;
+      strict_equal<x, front>::value || contains<value_list<tail...>, x>::value;
 };
 
 //
@@ -80,7 +89,7 @@ struct index<value_list<front, tail...>, x> {
   static constexpr size_t value = 1 + index<value_list<tail...>, x>::value;
 };
 template <auto x, auto front, auto... tail>
-requires(meta::strict_equal<x, front>)  //
+requires(strict_equal<x, front>::value)  //
     struct index<value_list<front, tail...>, x> {
   static constexpr size_t value = 0;
 };
