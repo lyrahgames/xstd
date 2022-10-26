@@ -33,12 +33,28 @@ template <typename t>
 struct is_regular_tuple : std::false_type {};
 template <typename... types>
 struct is_regular_tuple<regular_tuple<types...>> : std::true_type {};
+
+//
+template <instance::type_list list>
+struct regular_tuple_from_type_list {};
+//
+template <typename... types>
+struct regular_tuple_from_type_list<xstd::type_list<types...>> {
+  using type = regular_tuple<types...>;
+};
+
 }  // namespace detail
 
 /// To simplify the interface, we use templated variables as alias.
 ///
 template <typename T>
 constexpr bool is_regular_tuple = detail::is_regular_tuple<T>::value;
+
+/// Get the regular tuple type from a given type list.
+///
+template <instance::type_list list>
+using regular_tuple_from_type_list =
+    typename detail::regular_tuple_from_type_list<list>::type;
 
 /// To simplify the usage as concept,
 /// we also provide a concept alias inside the 'instance' namespace.
