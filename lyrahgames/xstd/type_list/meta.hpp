@@ -204,6 +204,13 @@ constexpr bool for_each_until(auto&& f) {
   return list::for_each_until(std::forward<decltype(f)>(f));
 }
 
+///
+///
+template <instance::type_list list>
+constexpr auto apply(auto&& f) {
+  return list::apply(std::forward<decltype(f)>(f));
+}
+
 }  // namespace meta::type_list
 
 }  // namespace lyrahgames::xstd

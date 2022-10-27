@@ -24,6 +24,32 @@ struct empty_type {};
 
 }  // namespace
 
+SCENARIO("Struct Tuple Offset Test") {
+  static_assert(sizeof(struct_tuple<uint8, uint64>) == 16);
+  static_assert(alignof(struct_tuple<uint8, uint64>) == 8);
+  //
+  static_assert(sizeof(struct_tuple<uint8, uint8, uint64>) == 16);
+  static_assert(alignof(struct_tuple<uint8, uint8, uint64>) == 8);
+  //
+  static_assert(sizeof(struct_tuple<uint8, uint8, uint8, uint64>) == 16);
+  static_assert(alignof(struct_tuple<uint8, uint8, uint8, uint64>) == 8);
+  //
+  static_assert(sizeof(struct_tuple<uint8, uint8, uint8, uint32, uint64>) ==
+                16);
+  static_assert(alignof(struct_tuple<uint8, uint8, uint8, uint32, uint64>) ==
+                8);
+  //
+  static_assert(sizeof(struct_tuple<uint64, uint8>) == 16);
+  static_assert(alignof(struct_tuple<uint64, uint8>) == 8);
+  //
+  static_assert(sizeof(struct_tuple<uint64, uint8, uint8>) == 16);
+  static_assert(alignof(struct_tuple<uint64, uint8, uint8>) == 8);
+  static_assert(sizeof(struct_tuple<uint64, uint8, uint8, uint32>) == 16);
+  static_assert(alignof(struct_tuple<uint64, uint8, uint8, uint32>) == 8);
+  static_assert(sizeof(struct_tuple<uint64, uint8, uint16, uint8>) == 16);
+  static_assert(alignof(struct_tuple<uint64, uint8, uint16, uint8>) == 8);
+}
+
 SCENARIO("") {
   using type = struct_tuple<>;
   static_assert(sizeof(type) == 1);

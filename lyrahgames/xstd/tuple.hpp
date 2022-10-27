@@ -70,6 +70,8 @@ namespace meta::tuple {
 template <generic::tuple tuple_type>
 constexpr auto size = std::tuple_size<tuple_type>::value;
 
+/// This meta function returns a type list
+/// that contains all types of the generic tuple in the same order.
 ///
 template <generic::tuple tuple_type,
           instance::value_list indices = value_list::iota<size<tuple_type>>>

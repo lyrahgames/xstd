@@ -104,6 +104,10 @@ struct base {
     return detail::type_list::for_each_until<self>(
         std::forward<decltype(f)>(f));
   }
+
+  static constexpr auto apply(auto&& f) {
+    return std::forward<decltype(f)>(f).template operator()<types...>();
+  }
 };
 
 }  // namespace detail::type_list

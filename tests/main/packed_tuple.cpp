@@ -1,5 +1,8 @@
 #include <doctest/doctest.h>
 //
+#include <iomanip>
+#include <iostream>
+//
 #include <lyrahgames/xstd/packed_tuple.hpp>
 
 using namespace std;

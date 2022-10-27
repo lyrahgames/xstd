@@ -28,9 +28,17 @@ namespace lyrahgames::xstd {
 // They can be used to state simple pre- and post-conditions.
 
 namespace generic {
-template <typename T>
-concept constraint = generic::callable<T> && meta::equal < meta::result<T>,
-bool > &&(meta::argument_count<T> == 1) && std::default_initializable<T>;
+
+// template <typename T>
+// concept constraint = generic::callable<T> && meta::equal < meta::result<T>,
+// bool > &&(meta::argument_count<T> == 1) && std::default_initializable<T>;
+
+template <typename C, typename T>
+concept constraint = std::is_empty_v<C> &&  //
+    requires(C c, const T& t) {
+  { c(t) } -> std::convertible_to<bool>;
+};
+
 }  // namespace generic
 
 struct contract_violation : std::runtime_error {
@@ -44,41 +52,83 @@ struct contract_violation : std::runtime_error {
 
 #ifdef NDEBUG
 
-template <generic::constraint T>
-using contract = meta::argument<T, 0>;
+// template <generic::constraint T>
+// using contract = meta::argument<T, 0>;
+
+template <typename T, auto C>
+using contract = T;
 
 #else  // NDEBUG
 
-// A contract must hold the one-variable contstraint
-// and the underlying type.
-template <generic::constraint T>
+template <typename T, auto C>
 struct contract {
-  using type = meta::argument<T, 0>;
-  using constraint = T;
+  using type = T;
+  static constexpr auto constraint = C;
 
   void check(source_location location) {
-    if (!constraint{}(value)) throw contract_violation{location};
+    if (!constraint(value)) throw contract_violation{location};
   }
 
-  // Implicit Constructor
-  contract(type v, source_location location = source_location::current())
-      : value(v) {
+  // Default constructor is not allowed.
+
+  // Only one-variable constructors for copying and moving.
+  // Otherwise, the source location would not be capturable.
+  // template <typename argument>
+  // contract(argument&& arg,
+  //          source_location location = source_location::current())  //
+  //     requires std::constructible_from<type, argument>
+  //     : value(std::forward<argument>(arg)) {
+  //   check(location);
+  // }
+
+  contract(const type& arg,
+           source_location location = source_location::current())
+      : value(arg) {
     check(location);
   }
 
-  // Construction from contracts with a convertible base type
-  template <generic::constraint U>
-  requires std::constructible_from<type, typename contract<U>::type>  //
-  contract(contract<U> c, source_location location = source_location::current())
-      : value(c.value) {
+  contract(type&& arg, source_location location = source_location::current())
+      : value(std::move(arg)) {
     check(location);
   }
 
-  // Implicit conversion to base type.
+  // Implicit conversion back to the underlying type.
   operator type() { return value; }
 
   type value;
 };
+
+// A contract must hold the one-variable contstraint
+// and the underlying type.
+// template <generic::constraint T>
+// struct contract {
+//   using type = meta::argument<T, 0>;
+//   using constraint = T;
+
+//   void check(source_location location) {
+//     if (!constraint{}(value)) throw contract_violation{location};
+//   }
+
+//   // Implicit Constructor
+//   contract(type v, source_location location = source_location::current())
+//       : value(v) {
+//     check(location);
+//   }
+
+//   // Construction from contracts with a convertible base type
+//   template <generic::constraint U>
+//   requires std::constructible_from<type, typename contract<U>::type>  //
+//   contract(contract<U> c, source_location location =
+//   source_location::current())
+//       : value(c.value) {
+//     check(location);
+//   }
+
+//   // Implicit conversion to base type.
+//   operator type() { return value; }
+
+//   type value;
+// };
 
 #endif  // NDEBUG
 
@@ -87,40 +137,44 @@ struct contract {
 // Concepts that use adjectives as names can be found in another
 // namespace so that there is no name clash.
 
-template <std::totally_ordered type>
-using positive = contract<decltype([](type v) { return v > type(0); })>;
+// template <std::totally_ordered type>
+// using positive = contract<decltype([](type v) { return v > type(0); })>;
 
-template <std::totally_ordered type>
-using non_negative = contract<decltype([](type v) { return v >= type(0); })>;
+// template <std::totally_ordered type>
+// using non_negative = contract<decltype([](type v) { return v >= type(0); })>;
 
-template <std::totally_ordered type>
-using negative = contract<decltype([](type v) { return v < type(0); })>;
+// template <std::totally_ordered type>
+// using negative = contract<decltype([](type v) { return v < type(0); })>;
 
-template <std::totally_ordered type>
-using non_zero = contract<decltype([](type v) { return v != type(0); })>;
+// template <std::totally_ordered type>
+// using non_zero = contract<decltype([](type v) { return v != type(0); })>;
 
-// [0,1]
-template <std::totally_ordered type>
-using normalized =
-    contract<decltype([](type v) { return (type(0) <= v) && (v <= type(1)); })>;
-// (0,1)
-template <std::totally_ordered type>
-using open_normalized =
-    contract<decltype([](type v) { return (type(0) < v) && (v < type(1)); })>;
-// [0,1)
-template <std::totally_ordered type>
-using left_normalized =
-    contract<decltype([](type v) { return (type(0) <= v) && (v < type(1)); })>;
-// (0,1]
-template <std::totally_ordered type>
-using right_normalized =
-    contract<decltype([](type v) { return (type(0) < v) && (v <= type(1)); })>;
+// // [0,1]
+// template <std::totally_ordered type>
+// using normalized =
+//     contract<decltype([](type v) { return (type(0) <= v) && (v <= type(1));
+//     })>;
+// // (0,1)
+// template <std::totally_ordered type>
+// using open_normalized =
+//     contract<decltype([](type v) { return (type(0) < v) && (v < type(1));
+//     })>;
+// // [0,1)
+// template <std::totally_ordered type>
+// using left_normalized =
+//     contract<decltype([](type v) { return (type(0) <= v) && (v < type(1));
+//     })>;
+// // (0,1]
+// template <std::totally_ordered type>
+// using right_normalized =
+//     contract<decltype([](type v) { return (type(0) < v) && (v <= type(1));
+//     })>;
 
 // non-empty contract for containers and spans
 
-using ufloat32 = non_negative<float32>;
-using ufloat64 = non_negative<float64>;
-using nfloat32 = normalized<float32>;
-using nfloat64 = normalized<float64>;
+// using ufloat32 = non_negative<float32>;
+// using ufloat64 = non_negative<float64>;
+// using nfloat32 = normalized<float32>;
+// using nfloat64 = normalized<float64>;
 
 }  // namespace lyrahgames::xstd

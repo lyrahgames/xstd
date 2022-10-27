@@ -197,6 +197,28 @@ SCENARIO("") {
   });
 }
 
+template <size_t index, instance::regular_tuple tuple_type>
+consteval auto offset_test(tuple_type t) {
+  return static_cast<size_t>(reinterpret_cast<uintptr_t>(&value<index>(t)) -
+                             reinterpret_cast<uintptr_t>(&t));
+}
+
+SCENARIO("Regular Tuple Offset Test") {
+  // static_assert(sizeof(regular_tuple<uint8, uint64>) == 16);
+  // static_assert(alignof(regular_tuple<uint8, uint64>) == 8);
+  // //
+  // static_assert(sizeof(regular_tuple<uint8, uint8, uint64>) == 16);
+  // static_assert(alignof(regular_tuple<uint8, uint8, uint64>) == 8);
+  // //
+  // static_assert(sizeof(regular_tuple<uint8, uint8, uint8, uint64>) == 16);
+  // static_assert(alignof(regular_tuple<uint8, uint8, uint8, uint64>) == 8);
+
+  // using tuple_type = regular_tuple<char, double, char, int>;
+  // meta::value_list::iota<tuple_type::size()>::for_each([&]<auto i> {  //
+  //   MESSAGE("offset = " << offset_test<i>(tuple_type{}));
+  // });
+}
+
 SCENARIO("Tuple Member Offset") {
   using xstd::regular_tuple;
   using type = regular_tuple<int, nothing, char, double, nothing>;

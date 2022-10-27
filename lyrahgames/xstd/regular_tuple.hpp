@@ -80,6 +80,14 @@ constexpr decltype(auto) value(
     return value<index - 1>(std::forward<decltype(t)>(t).next());
 }
 
+namespace meta::regular_tuple {
+
+///
+// template <instance::regular_tuple tuple_type, size_t index>
+// constexpr auto offset = ;
+
+}  // namespace meta::regular_tuple
+
 namespace detail::regular_tuple {
 
 /// Used to implement the regular_tuple structure.
@@ -229,11 +237,15 @@ struct regular_tuple<T, U...> : detail::regular_tuple::wrapper<sizeof...(U), T>,
   template <size_t index>
   using type = typename types::template element<index>;
 
-  /// Returns the count of elements inside the regular_tuple.
-  static constexpr size_t size() { return 1 + sizeof...(U); }
-
   using data_type = detail::regular_tuple::wrapper<sizeof...(U), T>;
   using next_type = regular_tuple<U...>;
+
+  /// Returns the count of elements inside the regular_tuple.
+  static constexpr auto size() noexcept -> size_t { return 1 + sizeof...(U); }
+
+  // static constexpr auto offset() noexcept -> size_t {
+  //   return aligned_offset(sizeof(data_type), alignof(next_type));
+  // }
 
   constexpr decltype(auto) data() & noexcept {
     return static_cast<data_type&>(*this);
