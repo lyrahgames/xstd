@@ -4,13 +4,6 @@
 #include <lyrahgames/xstd/type_list/type_list.hpp>
 #include <lyrahgames/xstd/value_list/value_list.hpp>
 
-// The C++ standard does not specify a memory layout to be used for tuples.
-// For issues concerning the copy of memory, a custom tuple may be needed.
-// It should provide a contiguous access to the given types in the same
-// order.
-//
-// The tuple should be trivial if every type contained is trivial.
-
 namespace lyrahgames::xstd {
 
 // Multiple tuple structures may exist due to several reasons.

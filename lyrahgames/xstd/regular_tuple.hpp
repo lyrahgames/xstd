@@ -1,21 +1,17 @@
 #pragma once
-#include <lyrahgames/xstd/tuple.hpp>
+#include <lyrahgames/xstd/reverse_tuple.hpp>
+#include <lyrahgames/xstd/static_index_list.hpp>
+
+// The C++ standard does not specify a memory layout to be used for tuples.
+// For issues concerning the copy of memory, a custom tuple may be needed.
+// It should provide a contiguous access to the given types in the same
+// order as they are given in the template parameter list.
 
 namespace lyrahgames::xstd {
 
 /// The actual custom tuple structure.
 /// Types are stored in the same order as they are given.
 /// This includes alignment and padding as it would be done in structs.
-/// Due to inheritance and EBCO, empty classes should not
-/// take up any space when used only once.
-///
-/// "Empty base optimization is prohibited if one of the empty base classes is
-/// also the type or the base of the type of the first non-static data member,
-/// since the two base subobjects of the same type are required to have
-/// different addresses within the object representation of the most derived
-/// type." [cppreference.com: Empty Base Optimization]
-/// https://en.cppreference.com/w/cpp/language/ebo
-///
 ///
 template <typename... types>
 struct regular_tuple;
@@ -65,282 +61,156 @@ template <typename T>
 concept regular_tuple = is_regular_tuple<T>;
 
 template <typename T>
-concept reducable_regular_tuple = regular_tuple<reduction<T>>;
+concept reducible_regular_tuple = regular_tuple<reduction<T>>;
 
 }  // namespace instance
+
+namespace detail::regular_tuple {
+
+using xstd::regular_tuple;
+using xstd::type_list;
+
+//
+template <instance::type_list types>
+struct from_type_list {};
+//
+template <typename... types>
+struct from_type_list<type_list<types...>> {
+  using type = regular_tuple<types...>;
+};
+
+}  // namespace detail::regular_tuple
+
+namespace meta::regular_tuple {
+
+/// Returns an instance of 'regular_tuple' which
+/// takes all the types given in the type list.
+///
+template <instance::type_list types>
+using from_type_list =
+    typename detail::regular_tuple::from_type_list<types>::type;
+
+/// Returns the offset in bytes of the element
+/// inside the structure given by the index.
+///
+template <instance::regular_tuple tuple_type, size_t index>
+constexpr auto offset = meta::reverse_tuple::offset<
+    typename tuple_type::tuple_type,
+    tuple_type::permutation::template element<index>>;
+
+}  // namespace meta::regular_tuple
 
 /// Access the elements of a regular_tuple by their index.
 ///
 template <size_t index>
 constexpr decltype(auto) value(
-    instance::reducable_regular_tuple auto&& t) noexcept {
-  if constexpr (index == 0)
-    return std::forward<decltype(t)>(t).data().data();
-  else
-    return value<index - 1>(std::forward<decltype(t)>(t).next());
+    instance::reducible_regular_tuple auto&& t) noexcept {
+  using tuple_type = meta::reduction<decltype(t)>;
+  using permutation = typename tuple_type::permutation;
+  return value<permutation::template element<index>>(
+      std::forward<decltype(t)>(t).tuple());
 }
 
-namespace meta::regular_tuple {
-
-///
-// template <instance::regular_tuple tuple_type, size_t index>
-// constexpr auto offset = ;
-
-}  // namespace meta::regular_tuple
-
-namespace detail::regular_tuple {
-
-/// Used to implement the regular_tuple structure.
-/// Types wrappes any given type so that regular_tuple can use it as a base
-/// class. 'N' is used to allow elements with the same type to occur multiple
-/// times in regular_tuple.
-template <size_t N, typename T>
-struct wrapper;
-
-template <typename type>
-struct is_wrapper : std::false_type {};
-template <size_t N, typename T>
-struct is_wrapper<wrapper<N, T>> : std::true_type {};
-
-namespace forwardable {
-template <typename T>
-concept wrapper = is_wrapper<std::decay_t<T>>::value;
-}
-
-template <size_t N, typename T>
-struct wrapper {
-  using data_type = T;
-
-  // The default functions of the compiler
-  // will automatically have the best properties.
-  // We still explicitly define them to make sure they exist.
-  wrapper() = default;
-  wrapper(const wrapper&) = default;
-  wrapper(wrapper&&) = default;
-  wrapper& operator=(const wrapper&) = default;
-  wrapper& operator=(wrapper&&) = default;
-
-  /// Forward Constructor
-  template <typename type>
-  explicit constexpr wrapper(type&& value) noexcept(
-      noexcept(data_type(std::forward<type>(value))))
-      : _data(std::forward<type>(value)) {}
-
-  // Generic Forward Constructor for Similar Wrapper Types
-  explicit constexpr wrapper(forwardable::wrapper auto&& x) noexcept(
-      noexcept(data_type(std::forward<decltype(x)>(x).data())))
-      : _data(std::forward<decltype(x)>(x).data()) {}
-
-  // Generic Assignment of Similar Wrapper Types
-  constexpr wrapper& operator=(forwardable::wrapper auto&& x) noexcept(
-      noexcept(_data = std::forward<decltype(x)>(x).data())) {
-    _data = std::forward<decltype(x)>(x).data();
-    return *this;
-  }
-
-  // Accessing the member will discard the qualifiers.
-  // So, we need these accessor functions.
-  // Additionally, they provide a uniform interface
-  // for different wrapper specializations.
-  constexpr decltype(auto) data() & noexcept {
-    return static_cast<data_type&>(_data);
-  }
-  constexpr decltype(auto) data() && noexcept {
-    return static_cast<data_type&&>(_data);
-  }
-  constexpr decltype(auto) data() const& noexcept {
-    return static_cast<const data_type&>(_data);
-  }
-  constexpr decltype(auto) data() const&& noexcept {
-    return static_cast<const data_type&&>(_data);
-  }
-
-  // The alternative
-  //
-  // data_type _data{};
-  //
-  // seems to be better, but forces
-  // the data_type to be non-trivial.
-  // So for now, explicit default initialization
-  // of the wrapped value will not be used.
-  //
-  data_type _data;
-};
-
-// Specialization for inheritable classes.
-// This will enable empty base class optimization.
-template <size_t N, typename T>
-requires(std::is_class_v<T> && (!std::is_final_v<T>))  //
-    struct wrapper<N, T> : T {
-  using data_type = T;
-  using data_type::data_type;
-
-  // The default functions of the compiler
-  // will automatically have the best properties.
-  // We still explicitly define them to make sure they exist.
-  //
-  wrapper() = default;
-  wrapper(const wrapper&) = default;
-  wrapper(wrapper&&) = default;
-  wrapper& operator=(const wrapper&) = default;
-  wrapper& operator=(wrapper&&) = default;
-
-  // Generic Forward Constructor for Similar Wrapper Types
-  //
-  explicit constexpr wrapper(forwardable::wrapper auto&& x) noexcept(
-      noexcept(data_type(std::forward<decltype(x)>(x).data())))
-      : data_type(std::forward<decltype(x)>(x).data()) {}
-
-  // Generic Assignment of Similar Wrapper Types
-  //
-  constexpr wrapper& operator=(forwardable::wrapper auto&& x) noexcept(noexcept(
-      static_cast<data_type&>(*this) = std::forward<decltype(x)>(x).data())) {
-    static_cast<data_type&>(*this) = std::forward<decltype(x)>(x).data();
-    return *this;
-  }
-
-  // Accessing the member will discard the qualifiers.
-  // So, we need these accessor functions.
-  // Additionally, they provide a uniform interface
-  // for different wrapper specializations.
-  //
-  constexpr decltype(auto) data() & noexcept {
-    return static_cast<data_type&>(*this);
-  }
-  constexpr decltype(auto) data() && noexcept {
-    return static_cast<data_type&&>(*this);
-  }
-  constexpr decltype(auto) data() const& noexcept {
-    return static_cast<const data_type&>(*this);
-  }
-  constexpr decltype(auto) data() const&& noexcept {
-    return static_cast<const data_type&&>(*this);
-  }
-};
-
-}  // namespace detail::regular_tuple
-
-/// Empty regular_Tuple Specialization
-template <>
-struct regular_tuple<> {
-  using types = type_list<>;
-  static constexpr size_t size() { return 0; }
-};
-
-/// regular_Tuple Implementation
-/// Uses inheritance to make use of empty-base-class optimization.
-template <typename T, typename... U>
-struct regular_tuple<T, U...> : detail::regular_tuple::wrapper<sizeof...(U), T>,
-                                regular_tuple<U...> {
-  using types = type_list<T, U...>;
+template <typename... T>
+struct regular_tuple
+    : meta::reverse_tuple::from_type_list<typename type_list<T...>::reverse> {
+  using types = type_list<T...>;
 
   template <size_t index>
   using type = typename types::template element<index>;
 
-  using data_type = detail::regular_tuple::wrapper<sizeof...(U), T>;
-  using next_type = regular_tuple<U...>;
+  using tuple_type =
+      meta::reverse_tuple::from_type_list<typename types::reverse>;
+  using permutation =
+      typename meta::static_index_list::iota<types::size>::reverse;
 
-  /// Returns the count of elements inside the regular_tuple.
-  static constexpr auto size() noexcept -> size_t { return 1 + sizeof...(U); }
-
-  // static constexpr auto offset() noexcept -> size_t {
-  //   return aligned_offset(sizeof(data_type), alignof(next_type));
-  // }
-
-  constexpr decltype(auto) data() & noexcept {
-    return static_cast<data_type&>(*this);
-  }
-  constexpr decltype(auto) data() && noexcept {
-    return static_cast<data_type&&>(*this);
-  }
-  constexpr decltype(auto) data() const& noexcept {
-    return static_cast<const data_type&>(*this);
-  }
-  constexpr decltype(auto) data() const&& noexcept {
-    return static_cast<const data_type&&>(*this);
-  }
-
-  constexpr decltype(auto) next() & noexcept {
-    return static_cast<next_type&>(*this);
-  }
-  constexpr decltype(auto) next() && noexcept {
-    return static_cast<next_type&&>(*this);
-  }
-  constexpr decltype(auto) next() const& noexcept {
-    return static_cast<const next_type&>(*this);
-  }
-  constexpr decltype(auto) next() const&& noexcept {
-    return static_cast<const next_type&&>(*this);
-  }
+  static constexpr auto size() noexcept -> size_t { return types::size; }
 
   regular_tuple() = default;
-  ~regular_tuple() = default;
-  regular_tuple(const regular_tuple&) = default;
-  regular_tuple& operator=(const regular_tuple&) = default;
-  regular_tuple(regular_tuple&&) = default;
-  regular_tuple& operator=(regular_tuple&&) = default;
 
-  // Templatized Forward Constructor
   //
-  template <typename data_init, typename... next_init>
-  explicit constexpr regular_tuple(data_init&& d, next_init&&... n) noexcept(
-      noexcept(data_type(std::forward<data_init>(d))) &&  //
-      noexcept(next_type(std::forward<next_init>(n)...)))
-      : data_type(std::forward<data_init>(d)),
-        next_type(std::forward<next_init>(n)...) {}
+  template <size_t... indices>
+  constexpr regular_tuple(static_index_list<indices...>, auto&&... args) noexcept(
+      noexcept(tuple_type(forward_element<indices>(
+          std::forward<decltype(args)>(args)...)...)))  //
+      requires(size() == sizeof...(args))
+      : tuple_type(forward_element<indices>(
+            std::forward<decltype(args)>(args)...)...) {}
+
+  // The forward constructor needs to call
+  // the base tuple constructor in permuted order.
+  //
+  explicit constexpr regular_tuple(auto&&... args) noexcept(noexcept(
+      regular_tuple(permutation{}, std::forward<decltype(args)>(args)...)))  //
+      requires(size() == sizeof...(args))
+      : regular_tuple(permutation{}, std::forward<decltype(args)>(args)...) {}
 
   // Generic Copy/Move Construction
   //
-  constexpr regular_tuple(instance::reducable_regular_tuple auto&& x) noexcept(
-      noexcept(data_type(std::forward<decltype(x)>(x).data())) &&  //
-      noexcept(next_type(std::forward<decltype(x)>(x).next())))
-      : data_type(std::forward<decltype(x)>(x).data()),
-        next_type(std::forward<decltype(x)>(x).next()) {}
+  explicit constexpr regular_tuple(
+      instance::reducible_regular_tuple auto&& x) noexcept(  //
+      noexcept(tuple_type(std::forward<decltype(x)>(x).tuple())))
+      : tuple_type(std::forward<decltype(x)>(x).tuple()) {}
 
   // Generic Assignment Operator
   //
-  constexpr regular_tuple&
-  operator=(instance::reducable_regular_tuple auto&& x) noexcept(
-      noexcept(data() = std::forward<decltype(x)>(x).data()) &&  //
-      noexcept(next() = std::forward<decltype(x)>(x).next())) {
-    data() = std::forward<decltype(x)>(x).data();
-    next() = std::forward<decltype(x)>(x).next();
+  constexpr regular_tuple& operator=(
+      instance::reducible_regular_tuple auto&& x) noexcept(  //
+      noexcept(static_cast<tuple_type&>(*this) =
+                   std::forward<decltype(x)>(x).tuple())) {
+    static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x).tuple();
     return *this;
+  }
+
+  friend auto operator<=>(const regular_tuple&, const regular_tuple&) = default;
+
+  constexpr decltype(auto) tuple() & noexcept {
+    return static_cast<tuple_type&>(*this);
+  }
+  constexpr decltype(auto) tuple() && noexcept {
+    return static_cast<tuple_type&&>(*this);
+  }
+  constexpr decltype(auto) tuple() const& noexcept {
+    return static_cast<const tuple_type&>(*this);
+  }
+  constexpr decltype(auto) tuple() const&& noexcept {
+    return static_cast<const tuple_type&&>(*this);
   }
 };
 
-/// Deduction Guides
-///
+// Deduction Guides
+//
 template <typename... types>
-regular_tuple(types...) -> regular_tuple<types...>;
+regular_tuple(types&&...) -> regular_tuple<std::unwrap_ref_decay_t<types>...>;
 
 ///
 ///
-template <size_t... indices>
-constexpr auto auto_tuple(generic::tuple auto&& t,
-                          value_list<indices...>) noexcept(  //
-    noexcept(regular_tuple{get<indices>(std::forward<decltype(t)>(t))...})) {
-  return regular_tuple{get<indices>(std::forward<decltype(t)>(t))...};
-}
+// template <size_t... indices>
+// constexpr auto auto_tuple(generic::tuple auto&& t,
+//                           value_list<indices...>) noexcept(  //
+//     noexcept(regular_tuple{get<indices>(std::forward<decltype(t)>(t))...})) {
+//   return regular_tuple{get<indices>(std::forward<decltype(t)>(t))...};
+// }
 
 ///
 ///
-constexpr auto auto_tuple(generic::tuple auto&& t) noexcept(  //
-    noexcept(
-        auto_tuple(std::forward<decltype(t)>(t),
-                   meta::value_list::iota<
-                       std::tuple_size<std::decay_t<decltype(t)>>::value>{}))) {
-  using namespace meta::value_list;
-  constexpr auto size = std::tuple_size<std::decay_t<decltype(t)>>::value;
-  return auto_tuple(std::forward<decltype(t)>(t), iota<size>{});
-}
+// constexpr auto auto_tuple(generic::tuple auto&& t) noexcept(  //
+//     noexcept(
+//         auto_tuple(std::forward<decltype(t)>(t),
+//                    meta::value_list::iota<
+//                        std::tuple_size<std::decay_t<decltype(t)>>::value>{})))
+//                        {
+//   using namespace meta::value_list;
+//   constexpr auto size = std::tuple_size<std::decay_t<decltype(t)>>::value;
+//   return auto_tuple(std::forward<decltype(t)>(t), iota<size>{});
+// }
 
 /// This function is needed to make structured bindings available.
 /// Here, it is a simple wrapper function template for 'value'.
 ///
 template <size_t index>
 constexpr decltype(auto) get(
-    instance::reducable_regular_tuple auto&& t) noexcept {
+    instance::reducible_regular_tuple auto&& t) noexcept {
   return value<index>(std::forward<decltype(t)>(t));
 }
 
@@ -358,8 +228,7 @@ struct tuple_size<lyrahgames::xstd::regular_tuple<T...>> {
 /// Provides support for using structured bindings with regular_tuple.
 ///
 template <size_t N, typename... T>  //
-requires(N < sizeof...(T))          //
-    struct tuple_element<N, lyrahgames::xstd::regular_tuple<T...>> {
+struct tuple_element<N, lyrahgames::xstd::regular_tuple<T...>> {
   using type = typename lyrahgames::xstd::regular_tuple<T...>::template type<N>;
 };
 

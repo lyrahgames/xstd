@@ -30,6 +30,14 @@ struct base {
 
 }  // namespace detail::packed_tuple
 
+///
+/// "Empty base optimization is prohibited if one of the empty base classes is
+/// also the type or the base of the type of the first non-static data member,
+/// since the two base subobjects of the same type are required to have
+/// different addresses within the object representation of the most derived
+/// type." [cppreference.com: Empty Base Optimization]
+/// https://en.cppreference.com/w/cpp/language/ebo
+///
 template <typename... types>
 struct packed_tuple : detail::packed_tuple::base<types...>::type {
   using traits = detail::packed_tuple::base<types...>;

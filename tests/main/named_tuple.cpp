@@ -56,19 +56,19 @@ SCENARIO("Named Tuple") {
   });
 
   // Make sure structured bindings are still working for named tuples.
-  auto& [id, type, value] = package;
+  // auto& [id, type, value] = package;
 
-  CHECK(id == 0);
-  CHECK(type == 'a');
-  CHECK(value == 1.23f);
+  // CHECK(id == 0);
+  // CHECK(type == 'a');
+  // CHECK(value == 1.23f);
 
-  ++id;
-  type = 'b';
-  value = 3.14f;
+  // ++id;
+  // type = 'b';
+  // value = 3.14f;
 
-  CHECK(id == 1);
-  CHECK(type == 'b');
-  CHECK(value == 3.14f);
+  // CHECK(id == 1);
+  // CHECK(type == 'b');
+  // CHECK(value == 3.14f);
 }
 
 // SCENARIO("Named Tuple 2") {
