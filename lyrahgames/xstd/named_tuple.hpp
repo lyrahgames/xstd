@@ -1,35 +1,48 @@
 #pragma once
 #include <lyrahgames/xstd/static_identifier_list.hpp>
+#include <lyrahgames/xstd/static_index_list.hpp>
 #include <lyrahgames/xstd/tuple.hpp>
 
 namespace lyrahgames::xstd {
 
+namespace generic {
+
+template <typename tuple_type, static_zstring name>
+concept named_tuple_value_access = requires(tuple_type x) {
+  {
+    value<name>(x)
+    } -> std::convertible_to<typename tuple_type::template type<name>>;
+};
+
+/// Checks whether a given type fulfills the requirements of a generic tuple.
+///
+using namespace meta::value_list;
+template <typename tuple_type>
+concept named_tuple = tuple<tuple_type> &&
+    // Require applied check to be valid for all types.
+    logic_and<transform<
+        // Generate indices to get all types.
+        typename tuple_type::names,
+        // Check each tuple identifier for consistent access.
+        []<static_zstring x>() {
+          return named_tuple_value_access<tuple_type, x>;
+        }>>;
+
+///
+///
+template <typename T>
+concept reducible_named_tuple = tuple<reduction<T>>;
+
+template <typename tuple_type>
+concept unnamed_tuple = tuple<tuple_type> &&(!named_tuple<tuple_type>);
+template <typename tuple_type>
+concept reducible_unnamed_tuple = unnamed_tuple<reduction<tuple_type>>;
+
+}  // namespace generic
+
 template <instance::static_identifier_list identifiers, generic::tuple T>
 requires(identifiers::size == std::tuple_size<T>::value)  //
-    struct named_tuple : T {
-  using names = identifiers;
-  using tuple_type = T;
-  using types = meta::tuple::type_list_cast<tuple_type>;
-
-  // Enable all constructors of the underlying tuple type.
-  //
-  using tuple_type::tuple_type;
-
-  // Make forwarding of the underlying tuple type easy.
-  //
-  constexpr decltype(auto) tuple() & noexcept {
-    return static_cast<tuple_type&>(*this);
-  }
-  constexpr decltype(auto) tuple() && noexcept {
-    return static_cast<tuple_type&&>(*this);
-  }
-  constexpr decltype(auto) tuple() const& noexcept {
-    return static_cast<const tuple_type&>(*this);
-  }
-  constexpr decltype(auto) tuple() const&& noexcept {
-    return static_cast<const tuple_type&&>(*this);
-  }
-};
+    struct named_tuple;
 
 namespace detail {
 template <typename type>
@@ -52,6 +65,85 @@ template <typename T>
 concept reducible_named_tuple = named_tuple<reduction<T>>;
 
 }  // namespace instance
+
+template <instance::static_identifier_list identifiers, generic::tuple T>
+requires(identifiers::size == std::tuple_size<T>::value)  //
+    struct named_tuple : T {
+  using names = identifiers;
+  using tuple_type = T;
+  using types = meta::tuple::type_list_cast<tuple_type>;
+
+  template <static_zstring name>
+  using type = typename types::template element<names::template index<name>>;
+
+  static constexpr auto size() noexcept -> size_t { return tuple_type::size(); }
+
+  // Enable all constructors of the underlying tuple type.
+  //
+  using tuple_type::tuple_type;
+
+  ///
+  ///
+  template <size_t... indices>
+  constexpr named_tuple(generic::reducible_unnamed_tuple auto&& x,
+                        static_index_list<indices...>) noexcept(  //
+      noexcept(named_tuple(value<indices>(std::forward<decltype(x)>(x))...)))
+      : named_tuple(value<indices>(std::forward<decltype(x)>(x))...) {}
+  ///
+  explicit constexpr named_tuple(
+      generic::reducible_unnamed_tuple auto&& x) noexcept(  //
+      noexcept(named_tuple(std::forward<decltype(x)>(x),
+                           meta::static_index_list::iota<size()>{})))
+      : named_tuple(std::forward<decltype(x)>(x),
+                    meta::static_index_list::iota<size()>{}) {}
+
+  //
+  template <static_zstring... names>
+  constexpr named_tuple(generic::reducible_named_tuple auto&& x,
+                        static_identifier_list<names...>) noexcept(         //
+      noexcept(tuple_type(value<names>(std::forward<decltype(x)>(x))...)))  //
+      : tuple_type(value<names>(std::forward<decltype(x)>(x))...) {}
+
+  explicit constexpr named_tuple(
+      generic::reducible_named_tuple auto&& x) noexcept(  //
+      noexcept(named_tuple(std::forward<decltype(x)>(x), names{})))
+      : named_tuple(std::forward<decltype(x)>(x), names{}) {}
+
+  // Generic Copy/Move Construction
+  //
+  // explicit constexpr regular_tuple(
+  //     instance::reducible_regular_tuple auto&& x) noexcept(  //
+  //     noexcept(tuple_type(std::forward<decltype(x)>(x).tuple())))
+  //     : tuple_type(std::forward<decltype(x)>(x).tuple()) {}
+
+  // Generic Assignment Operator
+  //
+  constexpr named_tuple& operator=(auto&& x) noexcept(  //
+      noexcept(
+          static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x))) {
+    static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x);
+    return *this;
+  }
+
+  /// Default Lexicographic Ordering
+  ///
+  friend auto operator<=>(const named_tuple&, const named_tuple&) = default;
+
+  // Make forwarding of the underlying tuple type easy.
+  //
+  constexpr decltype(auto) tuple() & noexcept {
+    return static_cast<tuple_type&>(*this);
+  }
+  constexpr decltype(auto) tuple() && noexcept {
+    return static_cast<tuple_type&&>(*this);
+  }
+  constexpr decltype(auto) tuple() const& noexcept {
+    return static_cast<const tuple_type&>(*this);
+  }
+  constexpr decltype(auto) tuple() const&& noexcept {
+    return static_cast<const tuple_type&&>(*this);
+  }
+};
 
 ///
 // template <instance::named_tuple list, size_t index>

@@ -147,10 +147,25 @@ struct regular_tuple
 
   // Generic Copy/Move Construction
   //
+  // explicit constexpr regular_tuple(
+  //     instance::reducible_regular_tuple auto&& x) noexcept(  //
+  //     noexcept(tuple_type(std::forward<decltype(x)>(x).tuple())))
+  //     : tuple_type(std::forward<decltype(x)>(x).tuple()) {}
+
+  ///
+  ///
+  template <size_t... indices>
+  constexpr regular_tuple(generic::reducible_tuple auto&& x,
+                          static_index_list<indices...>) noexcept(  //
+      noexcept(regular_tuple(value<indices>(std::forward<decltype(x)>(x))...)))
+      : regular_tuple(value<indices>(std::forward<decltype(x)>(x))...) {}
+  ///
   explicit constexpr regular_tuple(
-      instance::reducible_regular_tuple auto&& x) noexcept(  //
-      noexcept(tuple_type(std::forward<decltype(x)>(x).tuple())))
-      : tuple_type(std::forward<decltype(x)>(x).tuple()) {}
+      generic::reducible_tuple auto&& x) noexcept(  //
+      noexcept(regular_tuple(std::forward<decltype(x)>(x),
+                             meta::static_index_list::iota<size()>{})))
+      : regular_tuple(std::forward<decltype(x)>(x),
+                      meta::static_index_list::iota<size()>{}) {}
 
   // Generic Assignment Operator
   //
