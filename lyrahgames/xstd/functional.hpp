@@ -1,5 +1,6 @@
 #pragma once
 #include <lyrahgames/xstd/static_index_list.hpp>
+#include <lyrahgames/xstd/type_list/type_list.hpp>
 
 namespace lyrahgames::xstd {
 
@@ -11,7 +12,7 @@ struct permuted_invocable_traits {};
 //
 template <typename F, size_t... indices, typename... Args>
 struct permuted_invocable_traits<F, static_index_list<indices...>, Args...> {
-  using arg_list = type_list<Args...>;
+  using arg_list = xstd::type_list<Args...>;
 
   using result_type = std::  //
       invoke_result_t<F, meta::type_list::element<arg_list, indices>...>;
@@ -19,8 +20,8 @@ struct permuted_invocable_traits<F, static_index_list<indices...>, Args...> {
   static constexpr bool invocable = std::  //
       invocable<F, typename arg_list::template element<indices>...>;
 
-  static constexpr bool is_nothrow_invocable = std::  //
-      nothrow_invocable_v<F, meta::type_list::element<arg_list, indices>...>;
+  static constexpr bool nothrow_invocable = std::  //
+      is_nothrow_invocable_v<F, meta::type_list::element<arg_list, indices>...>;
 };
 
 }  // namespace detail
@@ -48,8 +49,8 @@ namespace meta {
 /// Returns the result type of a permuted invocation of a callable.
 ///
 template <typename F, typename indices, typename... Args>
-using permuted_invocable_result =
-    detail::permuted_invocable_traits<F, indices, Args...>::result_type;
+using permuted_invocable_result = typename detail::
+    permuted_invocable_traits<F, indices, Args...>::result_type;
 
 }  // namespace meta
 
@@ -69,7 +70,7 @@ requires generic::permuted_invocable<F, decltype(list), Args...> {
 
 ///
 ///
-template <static_index_list indices, typename F, typename... Args>
+template <instance::static_index_list indices, typename F, typename... Args>
 constexpr auto permuted_invoke(F&& f, Args&&... args) noexcept(
     generic::permuted_nothrow_invocable<F, indices, Args...>)
     -> meta::permuted_invocable_result<F, indices, Args...>

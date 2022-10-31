@@ -1,4 +1,5 @@
 #pragma once
+#include <lyrahgames/xstd/static_index_list.hpp>
 #include <lyrahgames/xstd/tuple.hpp>
 #include <lyrahgames/xstd/type_list/type_list.hpp>
 
@@ -99,6 +100,8 @@ struct reverse_tuple<> {
   static constexpr auto size() -> size_t { return 0; }
   static constexpr auto unaligned_byte_size() -> size_t { return 0; }
   friend auto operator<=>(const reverse_tuple&, const reverse_tuple&) = default;
+
+  static constexpr void assign() noexcept {}
 };
 
 // Specialization of Reverse Tuples with at Least One Element
@@ -172,8 +175,8 @@ struct reverse_tuple<first, tail...> : reverse_tuple<tail...> {
                                    next_init&&... n)               //
       noexcept(noexcept(data_type(std::forward<data_init>(d))) &&  //
                noexcept(next_type(std::forward<next_init>(n)...)))
-      : _data(std::forward<data_init>(d)),
-        next_type(std::forward<next_init>(n)...) {}
+      : next_type(std::forward<next_init>(n)...),
+        _data(std::forward<data_init>(d)) {}
 
   // Generic Copy/Move Construction
   //
@@ -181,18 +184,44 @@ struct reverse_tuple<first, tail...> : reverse_tuple<tail...> {
       instance::reducible_reverse_tuple auto&& x)                           //
       noexcept(noexcept(data_type(std::forward<decltype(x)>(x).data())) &&  //
                noexcept(next_type(std::forward<decltype(x)>(x).next())))
-      : _data(std::forward<decltype(x)>(x).data()),
-        next_type(std::forward<decltype(x)>(x).next()) {}
+      : next_type(std::forward<decltype(x)>(x).next()),
+        _data(std::forward<decltype(x)>(x).data()) {}
 
   // Generic Assignment Operator
   //
-  constexpr reverse_tuple&
-  operator=(instance::reducible_reverse_tuple auto&& x) noexcept(
-      noexcept(_data = std::forward<decltype(x)>(x).data()) &&  //
-      noexcept(static_cast<next_type&>(*this) =
-                   std::forward<decltype(x)>(x).next())) {
-    _data = std::forward<decltype(x)>(x).data();
-    static_cast<next_type&>(*this) = std::forward<decltype(x)>(x).next();
+  // constexpr reverse_tuple&
+  // operator=(instance::reducible_reverse_tuple auto&& x) noexcept(
+  //     noexcept(_data = std::forward<decltype(x)>(x).data()) &&  //
+  //     noexcept(static_cast<next_type&>(*this) =
+  //                  std::forward<decltype(x)>(x).next())) {
+  //   static_cast<next_type&>(*this) = std::forward<decltype(x)>(x).next();
+  //   _data = std::forward<decltype(x)>(x).data();
+  //   return *this;
+  // }
+
+  constexpr void assign(auto&& x, auto&&... args) noexcept(  //
+      noexcept(_data = std::forward<decltype(x)>(x)) &&      //
+      noexcept(static_cast<next_type&>(*this).assign(
+          std::forward<decltype(args)>(args)...)))  //
+      requires(1 + sizeof...(args) == size()) {
+    static_cast<next_type&>(*this).assign(
+        std::forward<decltype(args)>(args)...);
+    _data = std::forward<decltype(x)>(x);
+  }
+
+  template <size_t... indices>
+  constexpr void assign(generic::reducible_tuple auto&& x,
+                        static_index_list<indices...>) noexcept(  //
+      noexcept(assign(get<indices>(std::forward<decltype(x)>(x))...))) {
+    assign(get<indices>(std::forward<decltype(x)>(x))...);
+  }
+
+  constexpr reverse_tuple& operator=(
+      generic::reducible_tuple auto&& x) noexcept(  //
+      noexcept(assign(std::forward<decltype(x)>(x),
+                      meta::static_index_list::iota<size()>{}))) {
+    assign(std::forward<decltype(x)>(x),
+           meta::static_index_list::iota<size()>{});
     return *this;
   }
 

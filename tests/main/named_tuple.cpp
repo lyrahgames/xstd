@@ -13,6 +13,9 @@ using namespace xstd;
 
 SCENARIO("Named Tuple Element Access") {
   SUBCASE("Irreducible Types") {
+    static_assert(generic::xstd_tuple<regular_tuple<int, float>>);
+    static_assert(std::tuple_size<regular_tuple<int, float>>::value == 2);
+
     using tuple_type = named_tuple<static_identifier_list<"id", "value">,
                                    regular_tuple<int, float>>;
     //
@@ -62,6 +65,8 @@ SCENARIO("Named Tuple Element Access") {
 }
 
 SCENARIO("Regular Tuple Constructors and Assignments") {
+  static_assert(generic::xstd_tuple<regular_tuple<int, string, float>>);
+  static_assert(std::tuple_size<regular_tuple<int, string, float>>::value == 3);
   using tuple_type = named_tuple<static_identifier_list<"id", "name", "data">,
                                  regular_tuple<int, string, float>>;
 
@@ -153,10 +158,20 @@ SCENARIO("Regular Tuple Constructors and Assignments") {
         named_tuple<static_identifier_list<"data", "useless", "id", "name">,
                     regular_tuple<double, char, size_t, czstring>>;
     other_tuple_type x{3.14, 'c', 1, "Test"};
-    tuple_type y{x};
-    CHECK(value<"id">(y) == 1);
-    CHECK(value<"name">(y) == "Test");
-    CHECK(value<"data">(y) == 3.14f);
+
+    SUBCASE("By Construction") {
+      tuple_type y{x};
+      CHECK(value<"id">(y) == 1);
+      CHECK(value<"name">(y) == "Test");
+      CHECK(value<"data">(y) == 3.14f);
+    }
+    SUBCASE("By Assignment") {
+      tuple_type y{};
+      y = x;
+      CHECK(value<"id">(y) == 1);
+      CHECK(value<"name">(y) == "Test");
+      CHECK(value<"data">(y) == 3.14f);
+    }
   }
 }
 

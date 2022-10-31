@@ -1,4 +1,5 @@
 #pragma once
+#include <lyrahgames/xstd/functional.hpp>
 #include <lyrahgames/xstd/reverse_tuple.hpp>
 #include <lyrahgames/xstd/static_index_list.hpp>
 
@@ -157,8 +158,8 @@ struct regular_tuple
   template <size_t... indices>
   constexpr regular_tuple(generic::reducible_tuple auto&& x,
                           static_index_list<indices...>) noexcept(  //
-      noexcept(regular_tuple(value<indices>(std::forward<decltype(x)>(x))...)))
-      : regular_tuple(value<indices>(std::forward<decltype(x)>(x))...) {}
+      noexcept(regular_tuple(get<indices>(std::forward<decltype(x)>(x))...)))
+      : regular_tuple(get<indices>(std::forward<decltype(x)>(x))...) {}
   ///
   explicit constexpr regular_tuple(
       generic::reducible_tuple auto&& x) noexcept(  //
@@ -169,11 +170,49 @@ struct regular_tuple
 
   // Generic Assignment Operator
   //
+  // constexpr regular_tuple& operator=(
+  //     instance::reducible_regular_tuple auto&& x) noexcept(  //
+  //     noexcept(static_cast<tuple_type&>(*this) =
+  //                  std::forward<decltype(x)>(x).tuple())) {
+  //   static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x).tuple();
+  //   return *this;
+  // }
+
+  // The inherited assign methods also provide the arguments in the wrong order.
+  // So, we reorderd the arguments and define them again.
+  template <size_t... indices>
+  constexpr void assign(static_index_list<indices...>,
+                        auto&&... args) noexcept(  //
+      noexcept(static_cast<tuple_type&>(*this).assign(
+          forward_element<permutation::template element<indices>>(
+              std::forward<decltype(args)>(args)...)...)))  //
+      requires(sizeof...(args) == size()) {
+    static_cast<tuple_type&>(*this).assign(
+        forward_element<permutation::template element<indices>>(
+            std::forward<decltype(args)>(args)...)...);
+  }
+
+  constexpr void assign(auto&&... args) noexcept(  //
+      noexcept(assign(meta::static_index_list::iota<size()>{},
+                      std::forward<decltype(args)>(args)...)))  //
+      requires(sizeof...(args) == size()) {
+    assign(meta::static_index_list::iota<size()>{},
+           std::forward<decltype(args)>(args)...);
+  }
+
+  template <size_t... indices>
+  constexpr void assign(generic::reducible_tuple auto&& x,
+                        static_index_list<indices...>) noexcept(  //
+      noexcept(assign(get<indices>(std::forward<decltype(x)>(x))...))) {
+    assign(get<indices>(std::forward<decltype(x)>(x))...);
+  }
+
   constexpr regular_tuple& operator=(
-      instance::reducible_regular_tuple auto&& x) noexcept(  //
-      noexcept(static_cast<tuple_type&>(*this) =
-                   std::forward<decltype(x)>(x).tuple())) {
-    static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x).tuple();
+      generic::reducible_tuple auto&& x) noexcept(  //
+      noexcept(assign(std::forward<decltype(x)>(x),
+                      meta::static_index_list::iota<size()>{}))) {
+    assign(std::forward<decltype(x)>(x),
+           meta::static_index_list::iota<size()>{});
     return *this;
   }
 

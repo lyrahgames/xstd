@@ -118,12 +118,46 @@ requires(identifiers::size == std::tuple_size<T>::value)  //
 
   // Generic Assignment Operator
   //
-  constexpr named_tuple& operator=(auto&& x) noexcept(  //
-      noexcept(
-          static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x))) {
+  constexpr named_tuple&
+  operator=(generic::reducible_unnamed_tuple auto&& x) noexcept(noexcept(
+      static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x))) {
     static_cast<tuple_type&>(*this) = std::forward<decltype(x)>(x);
     return *this;
   }
+
+  template <static_zstring... names>
+  constexpr void assign(generic::reducible_named_tuple auto&& x,
+                        static_identifier_list<names...>) noexcept(  //
+      noexcept(static_cast<tuple_type&>(*this).assign(
+          value<names>(std::forward<decltype(x)>(x))...))) {
+    static_cast<tuple_type&>(*this).assign(
+        value<names>(std::forward<decltype(x)>(x))...);
+  }
+
+  constexpr named_tuple&
+  operator=(generic::reducible_named_tuple auto&& x) noexcept(
+      noexcept(assign(std::forward<decltype(x)>(x), names{}))) {
+    assign(std::forward<decltype(x)>(x), names{});
+    return *this;
+  }
+
+  // We do not reorder types in here.
+  // So, we can use the assign method of the base class.
+  // template <size_t... indices>
+  // constexpr void assign(generic::reducible_tuple auto&& x,
+  //                       static_index_list<indices...>) noexcept(  //
+  //     noexcept(assign(get<indices>(std::forward<decltype(x)>(x))...))) {
+  //   assign(get<indices>(std::forward<decltype(x)>(x))...);
+  // }
+
+  // constexpr regular_tuple& operator=(
+  //     generic::reducible_tuple auto&& x) noexcept(  //
+  //     noexcept(assign(std::forward<decltype(x)>(x),
+  //                     meta::static_index_list::iota<size()>{}))) {
+  //   assign(std::forward<decltype(x)>(x),
+  //          meta::static_index_list::iota<size()>{});
+  //   return *this;
+  // }
 
   /// Default Lexicographic Ordering
   ///
