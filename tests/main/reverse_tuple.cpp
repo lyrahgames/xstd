@@ -75,10 +75,13 @@ SCENARIO("Reverse Tuple Size, Alignment, and Offset") {
       };
       using tuple_type = reverse_tuple<type, type2>;
 
+      // static_assert(generic::tuple<tuple_type>);
       static_assert(sizeof(tuple_type) == sizeof(test));
       static_assert(alignof(tuple_type) == alignof(test));
-      static_assert(offsetof(test, x) == tuple_type::template offset<0>());
-      static_assert(offsetof(test, y) == tuple_type::template offset<1>());
+      static_assert(offsetof(test, x) ==
+                    meta::tuple::byte_offset<tuple_type, 0>);
+      static_assert(offsetof(test, y) ==
+                    meta::tuple::byte_offset<tuple_type, 1>);
 
       types::for_each([]<typename type3> {
         struct test {
@@ -90,9 +93,12 @@ SCENARIO("Reverse Tuple Size, Alignment, and Offset") {
 
         static_assert(sizeof(tuple_type) == sizeof(test));
         static_assert(alignof(tuple_type) == alignof(test));
-        static_assert(offsetof(test, x) == tuple_type::template offset<0>());
-        static_assert(offsetof(test, y) == tuple_type::template offset<1>());
-        static_assert(offsetof(test, z) == tuple_type::template offset<2>());
+        static_assert(offsetof(test, x) ==
+                      meta::tuple::byte_offset<tuple_type, 0>);
+        static_assert(offsetof(test, y) ==
+                      meta::tuple::byte_offset<tuple_type, 1>);
+        static_assert(offsetof(test, z) ==
+                      meta::tuple::byte_offset<tuple_type, 2>);
       });
     });
   });

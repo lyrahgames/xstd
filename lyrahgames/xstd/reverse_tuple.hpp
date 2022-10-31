@@ -80,6 +80,15 @@ constexpr auto offset = tuple_type::template offset<index>();
 
 }  // namespace meta::reverse_tuple
 
+namespace detail::tuple {
+
+template <instance::reverse_tuple tuple_type, size_t index>
+struct byte_offset<tuple_type, index> {
+  static constexpr size_t value = tuple_type::template offset<index>();
+};
+
+}  // namespace detail::tuple
+
 /// Get forward access to the element given by index inside a reverse tuple.
 ///
 template <size_t index>

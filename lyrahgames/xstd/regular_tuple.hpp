@@ -101,6 +101,16 @@ constexpr auto offset = meta::reverse_tuple::offset<
 
 }  // namespace meta::regular_tuple
 
+namespace detail::tuple {
+
+template <instance::regular_tuple tuple_type, size_t index>
+struct byte_offset<tuple_type, index> {
+  static constexpr size_t value =
+      meta::regular_tuple::offset<tuple_type, index>;
+};
+
+}  // namespace detail::tuple
+
 /// Access the elements of a regular_tuple by their index.
 ///
 template <size_t index>

@@ -66,6 +66,17 @@ concept reducible_named_tuple = named_tuple<reduction<T>>;
 
 }  // namespace instance
 
+namespace detail::tuple {
+
+template <instance::named_tuple tuple_type, size_t index>
+requires generic::static_layout_tuple<typename tuple_type::tuple_type>  //
+struct byte_offset<tuple_type, index> {
+  static constexpr size_t value =
+      byte_offset<typename tuple_type::tuple_type, index>::value;
+};
+
+}  // namespace detail::tuple
+
 template <instance::static_identifier_list identifiers, generic::tuple T>
 requires(identifiers::size == std::tuple_size<T>::value)  //
     struct named_tuple : T {

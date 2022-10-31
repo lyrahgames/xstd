@@ -72,7 +72,27 @@ struct type_list_cast<tuple_type, static_index_list<indices...>> {
       type_list<typename std::tuple_element<indices, tuple_type>::type...>;
 };
 
+template <typename tuple_type, size_t index>
+struct byte_offset;
+
 }  // namespace detail::tuple
+
+namespace generic {
+
+template <typename tuple_type, size_t index>
+concept tuple_member_offset = requires {
+  {
+    detail::tuple::byte_offset<tuple_type, index>::value
+    } -> std::convertible_to<size_t>;
+};
+
+template <typename tuple_type>
+concept static_layout_tuple =
+    tuple<tuple_type> &&  //
+    logic_and < transform < iota<std::tuple_size<tuple_type>::value>,
+[]<size_t index> { return tuple_member_offset<tuple_type, index>; } >> ;
+
+}  // namespace generic
 
 namespace meta::tuple {
 
@@ -84,6 +104,11 @@ template <generic::tuple tuple_type,
               static_index_list::iota<std::tuple_size<tuple_type>::value>>
 using type_list_cast =
     typename detail::tuple::type_list_cast<tuple_type, indices>::type;
+
+///
+template <generic::static_layout_tuple tuple_type, size_t index>
+constexpr auto byte_offset =
+    detail::tuple::byte_offset<tuple_type, index>::value;
 
 }  // namespace meta::tuple
 

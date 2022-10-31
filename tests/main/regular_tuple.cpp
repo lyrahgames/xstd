@@ -79,9 +79,9 @@ SCENARIO("Regular Tuple Size, Alignment, and Offset") {
       static_assert(sizeof(tuple_type) == sizeof(test));
       static_assert(alignof(tuple_type) == alignof(test));
       static_assert(offsetof(test, x) ==
-                    meta::regular_tuple::offset<tuple_type, 0>);
+                    meta::tuple::byte_offset<tuple_type, 0>);
       static_assert(offsetof(test, y) ==
-                    meta::regular_tuple::offset<tuple_type, 1>);
+                    meta::tuple::byte_offset<tuple_type, 1>);
 
       types::for_each([]<typename type3> {
         struct test {
@@ -94,11 +94,11 @@ SCENARIO("Regular Tuple Size, Alignment, and Offset") {
         static_assert(sizeof(tuple_type) == sizeof(test));
         static_assert(alignof(tuple_type) == alignof(test));
         static_assert(offsetof(test, x) ==
-                      meta::regular_tuple::offset<tuple_type, 0>);
+                      meta::tuple::byte_offset<tuple_type, 0>);
         static_assert(offsetof(test, y) ==
-                      meta::regular_tuple::offset<tuple_type, 1>);
+                      meta::tuple::byte_offset<tuple_type, 1>);
         static_assert(offsetof(test, z) ==
-                      meta::regular_tuple::offset<tuple_type, 2>);
+                      meta::tuple::byte_offset<tuple_type, 2>);
       });
     });
   });
